@@ -898,15 +898,47 @@ function updateUI() {
     document.getElementById('m-capital').textContent = fmt(r.startupCapital);
 
     // ROAS sensitivity
-    var roasVals = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
-    var roasHtml = '';
-    roasVals.forEach(function (rv) {
+    var step = 0.5;
+    var minRoas = 0.5;
+    var maxRoas = 4.0;
+    if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0) {
+        maxRoas = Math.max(maxRoas, Math.ceil(r.breakEvenROAS / step) * step + 2.0);
+    }
+    var roasVals = [];
+    for (var rv = minRoas; rv <= maxRoas + 0.001; rv += step) {
+        roasVals.push(Math.round(rv * 10) / 10);
+    }
+    // 把当前目标 ROAS 也纳入表格
+    if (p.ratio > 0 && !roasVals.some(function (v) { return Math.abs(v - p.ratio) < 0.01; })) {
+        roasVals.push(Math.round(p.ratio * 10) / 10);
+        roasVals.sort(function (a, b) { return a - b; });
+    }
+
+    // 先计算所有行，找到最接近盈亏平衡 ROAS 的行标绿
+    var rows = roasVals.map(function (rv) {
         var ad = r.grossGSV / rv;
         var tc = r.nonAdCost + ad;
         var pf = r.netGSV - tc;
+        return { rv: rv, ad: ad, tc: tc, pf: pf };
+    });
+    var beIndex = -1;
+    if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0) {
+        var minDiff = Infinity;
+        rows.forEach(function (row, idx) {
+            var diff = Math.abs(row.rv - r.breakEvenROAS);
+            if (diff < minDiff) {
+                minDiff = diff;
+                beIndex = idx;
+            }
+        });
+    }
+
+    var roasHtml = '';
+    rows.forEach(function (row, idx) {
+        var rv = row.rv, ad = row.ad, tc = row.tc, pf = row.pf;
         var pr = pf / r.netGSV;
         var isCur = Math.abs(rv - p.ratio) < 0.01;
-        var isBE = isFinite(r.breakEvenROAS) && Math.abs(rv - r.breakEvenROAS) < 0.25;
+        var isBE = idx === beIndex;
         var cls = isBE ? 'break-even-row' : (isCur ? 'highlight-row' : '');
         var status = pf > 0 ? '<span class="profit">盈利</span>' : '<span class="loss">亏损</span>';
         if (isBE) status = '≈ 盈亏平衡';
