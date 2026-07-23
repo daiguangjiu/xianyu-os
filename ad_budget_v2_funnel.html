@@ -288,7 +288,7 @@
             <div class="metric"><div class="label">单双广告成本</div><div class="value" id="m-adpair">—</div><div class="sub">广告费 ÷ 备货量</div></div>
             <div class="metric"><div class="label">毛利率（扣产品成本）</div><div class="value" id="m-margin">—</div><div class="sub">(净GSV-产品成本) ÷ 净GSV</div></div>
             <div class="metric"><div class="label">盈亏平衡 ROAS</div><div class="value warning" id="m-breakeven">—</div><div class="sub">达到此值不赚不亏</div></div>
-            <div class="metric"><div class="label">所需启动资金</div><div class="value" id="m-capital">—</div><div class="sub">产品成本 + 广告预算</div></div>
+            <div class="metric"><div class="label">所需启动资金</div><div class="value" id="m-capital">—</div><div class="sub">备货成本 + 广告预算</div></div>
         </div>
     </div>
 
@@ -385,7 +385,7 @@
             <li><strong>无忧卖</strong>：开启后实际售价 = 原价 − 降价金额，GSV 按降价后重算。佣金互斥：参与无忧卖时只算无忧卖佣金（不收平台佣金），不参与时只算平台佣金。</li>
             <li><strong>敏感性分析①</strong>：不同无忧卖降价金额的盈利模型——「不参与」为基准（平台佣金），各降价行用无忧卖佣金。「vs不参与」列直接告诉你降多少钱参与最划算。</li>
             <li><strong>盈亏平衡 ROAS</strong>：广告效率达到此值时项目不赚不亏。</li>
-            <li><strong>启动资金</strong>：产品成本 + 广告预算为主要资金占用。</li>
+            <li><strong>启动资金</strong>：备货成本（按备货量）+ 广告预算。产品成本按实际售出量计算，退货商品退回可再售不浪费。</li>
             <li>修改任意参数后所有表格自动联动更新。</li>
         </ul>
     </div>
@@ -734,7 +734,8 @@ function calc(p) {
     var netGSV = grossGSV - returnRefund;
     var validOrders = quantity - returnCount;
 
-    var totalProductCost = quantity * productCost;
+    var totalProductCost = validOrders * productCost; // 按实际售出量算（退货商品退回可再售，不浪费）
+    var inventoryCost = quantity * productCost; // 实际备货资金占用（用于启动资金计算）
     // 交易服务费按全部成交单扣取（确认收货即扣，退货不退佣金）
     var platformFee = wmEnabled ? 0 : grossGSV * platformFeeRate;
     var wmCommission = wmEnabled ? grossGSV * wmCommRate : 0;
@@ -753,7 +754,7 @@ function calc(p) {
     var grossMargin = netGSV > 0 ? (netGSV - totalProductCost) / netGSV : 0;
     var breakEvenROAS = (netGSV - nonAdCost) > 0 ? grossGSV / (netGSV - nonAdCost) : Infinity;
     var sellingDays = Math.ceil(quantity / Math.max(dailyOrders, 1));
-    var startupCapital = totalProductCost + adBudget;
+    var startupCapital = inventoryCost + adBudget;
     var totalReduction = quantity * priceReduction;
 
     // Without 无忧卖 for comparison
@@ -769,7 +770,7 @@ function calc(p) {
     return {
         actualPrice: actualPrice, grossGSV: grossGSV, returnCount: returnCount, returnRefund: returnRefund,
         netGSV: netGSV, validOrders: validOrders,
-        totalProductCost: totalProductCost, platformFee: platformFee, wmCommission: wmCommission,
+        totalProductCost: totalProductCost, inventoryCost: inventoryCost, platformFee: platformFee, wmCommission: wmCommission,
         totalShipping: totalShipping, totalReturnShip: totalReturnShip, nonAdCost: nonAdCost,
         adBudget: adBudget, totalCost: totalCost, profit: profit, profitRate: profitRate,
         roas: roas, cpa: cpa, adPerPair: adPerPair, grossMargin: grossMargin,
@@ -841,7 +842,7 @@ function updateUI() {
 
     // Cost table
     var costRows = [
-        ['产品成本', fmtInt(p.quantity) + '双 × ' + fmt0(p.productCost), r.totalProductCost]
+        ['产品成本', fmtInt(r.validOrders) + '双 × ' + fmt0(p.productCost) + '（售出量）', r.totalProductCost]
     ];
     if (wmEnabled) {
         costRows.push(['无忧卖佣金', fmtPct(p.wmCommRate) + ' × 全部成交GSV', r.wmCommission]);
@@ -972,7 +973,7 @@ function updateUI() {
     var baseN = baseG - baseRf;
     var baseAd = baseG / p.ratio;
     var baseComm = baseG * p.platformFeeRate;
-    var baseTC = p.quantity * p.productCost + baseComm + p.quantity * p.shipping + r.returnCount * p.returnShipping + baseAd;
+    var baseTC = r.validOrders * p.productCost + baseComm + p.quantity * p.shipping + r.returnCount * p.returnShipping + baseAd;
     var baseProfit = baseN - baseTC;
 
     reductions.forEach(function (rd) {
@@ -988,7 +989,7 @@ function updateUI() {
             g = p.quantity * actPrice; rf = r.returnCount * actPrice; n = g - rf;
             ad = g / p.ratio; comm = g * wmRate;
             commLabel = '无忧卖' + (wmRate * 100).toFixed(0) + '%';
-            tc = p.quantity * p.productCost + comm + p.quantity * p.shipping + r.returnCount * p.returnShipping + ad;
+            tc = r.validOrders * p.productCost + comm + p.quantity * p.shipping + r.returnCount * p.returnShipping + ad;
             profit = n - tc; prr = n > 0 ? profit / n : 0; diff = profit - baseProfit;
             isC = wmEnabled && Math.abs(rd - r.priceReduction) < 0.01;
             pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + (isC ? '<strong>¥' + rd + '</strong>' : '¥' + rd) + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmt0(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#fa8c16;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num ' + (diff >= 0 ? 'profit' : 'loss') + '">' + (diff >= 0 ? '+' : '') + fmt(diff) + '</td></tr>';
@@ -1006,7 +1007,7 @@ function updateUI() {
         var g = p.quantity * actPrice;
         var n = g - rf;
         var ad = g / p.ratio;
-        var pc = p.quantity * p.productCost;
+        var pc = r.validOrders * p.productCost;
         var comm = wmEnabled ? (g * r.wmCommRate) : (g * p.platformFeeRate);
         var ts = p.quantity * p.shipping;
         var trs = rc * p.returnShipping;

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <title>闲鱼经营测算表 — 售价73 / ROAS 1:3</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            color: #262626;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        .container { max-width: 860px; margin: 0 auto; }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #262626;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #8c8c8c;
+            margin-bottom: 32px;
+        }
+        .section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #262626;
+            margin-bottom: 16px;
+            padding-left: 10px;
+            border-left: 3px solid #1677ff;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { color: #8c8c8c; font-weight: 500; font-size: 13px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+        td.calc { color: #8c8c8c; font-size: 13px; }
+        tr.total-row td { border-top: 2px solid #d9d9d9; border-bottom: none; font-weight: 700; font-size: 15px; }
+        .profit { color: #52c41a; }
+        .loss { color: #ff4d4f; }
+        .highlight { background: #f6ffed; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-loss { background: #fff1f0; color: #ff4d4f; }
+        .badge-profit { background: #f6ffed; color: #52c41a; }
+        .note {
+            font-size: 12px;
+            color: #bfbfbf;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 18px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .card .label { font-size: 12px; color: #8c8c8c; margin-bottom: 6px; }
+        .card .value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .card .sub { font-size: 11px; color: #bfbfbf; margin-top: 2px; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .section { box-shadow: none; border: 1px solid #e8e8e8; }
+        }
+        @media (max-width: 600px) {
+            .summary-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>闲鱼经营测算表</h1>
+    <p class="subtitle">售价 ¥73 · ROAS 1:3 · 退货 15% · 平台佣金 1.6% · 备货 1000 单 · 生成于 2026-07-23（修正版：产品成本按售出量计算）</p>
+
+    <!-- 概览卡片 -->
+    <div class="summary-cards">
+        <div class="card">
+            <div class="label">销售净收入</div>
+            <div class="value">¥62,050</div>
+            <div class="sub">毛GSV ¥73,000 − 退款 ¥10,950</div>
+        </div>
+        <div class="card">
+            <div class="label">总成本</div>
+            <div class="value">¥60,431</div>
+            <div class="sub">产品+佣金+运费+广告</div>
+        </div>
+        <div class="card">
+            <div class="label">净利润</div>
+            <div class="value profit">+¥1,619</div>
+            <div class="sub">利润率 2.6%</div>
+        </div>
+        <div class="card">
+            <div class="label">盈亏平衡ROAS</div>
+            <div class="value">2.81</div>
+            <div class="sub">当前 ROAS 3.0 · 已盈利</div>
+        </div>
+    </div>
+
+    <!-- ① 基础参数 -->
+    <div class="section">
+        <div class="section-title">① 基础参数</div>
+        <table>
+            <thead><tr><th>参数</th><th>数值</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>备货量</td><td class="num">1,000 双</td><td class="calc">总备货</td></tr>
+                <tr><td>售价</td><td class="num">¥73 / 双</td><td class="calc">每双销售价格</td></tr>
+                <tr><td>产品成本</td><td class="num">¥35 / 双</td><td class="calc">默认值（用户未指定，可调整）</td></tr>
+                <tr><td>退货率</td><td class="num">15%</td><td class="calc">退货按全额退款</td></tr>
+                <tr><td>目标 ROAS</td><td class="num">1 : 3</td><td class="calc">每投入 ¥1 广告产生 ¥3 GSV</td></tr>
+                <tr><td>平台佣金率</td><td class="num">1.6%</td><td class="calc">鱼小铺费率，确认收货即扣</td></tr>
+                <tr><td>发货运费</td><td class="num">¥5 / 单</td><td class="calc">所有成交单均发货</td></tr>
+                <tr><td>退货运费</td><td class="num">¥1.2 / 单</td><td class="calc">退货单的逆向物流费</td></tr>
+            </tbody>
+        </table>
+        <div class="note">注：平台佣金按全部成交单扣取（毛GSV × 1.6%），退货不退佣金。产品成本按实际售出量（850双）计算，退货商品退回可再售不浪费。备货资金占用 ¥35,000（1000双 × ¥35）用于启动资金计算。</div>
+    </div>
+
+    <!-- ② 销售测算 -->
+    <div class="section">
+        <div class="section-title">② 销售测算</div>
+        <table>
+            <thead><tr><th>指标</th><th>计算方式</th><th style="text-align:right;">结果</th></tr></thead>
+            <tbody>
+                <tr><td>成交单量</td><td class="calc">备货量</td><td class="num">1,000 单</td></tr>
+                <tr><td>退货单量</td><td class="calc">1,000 × 15%</td><td class="num">150 单</td></tr>
+                <tr><td>净成交单量</td><td class="calc">1,000 − 150</td><td class="num">850 单</td></tr>
+                <tr><td>销售收入（毛 GSV）</td><td class="calc">1,000 × ¥73</td><td class="num">¥73,000</td></tr>
+                <tr><td>退货退款</td><td class="calc">150 × ¥73</td><td class="num">¥10,950</td></tr>
+                <tr class="total-row"><td>销售净收入（净 GSV）</td><td class="calc">毛GSV − 退货退款</td><td class="num">¥62,050</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ③ 成本明细 -->
+    <div class="section">
+        <div class="section-title">③ 成本明细</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>成本项</th>
+                    <th>计算说明</th>
+                    <th style="text-align:right;">金额</th>
+                    <th style="text-align:right;">占净GSV</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>产品成本</td>
+                    <td class="calc">850 双 × ¥35（售出量，退货可再售）</td>
+                    <td class="num">¥29,750</td>
+                    <td class="num">47.9%</td>
+                </tr>
+                <tr>
+                    <td>平台佣金</td>
+                    <td class="calc">1.6% × ¥73,000（全部成交GSV，退货不退）</td>
+                    <td class="num">¥1,168</td>
+                    <td class="num">1.9%</td>
+                </tr>
+                <tr>
+                    <td>发货运费</td>
+                    <td class="calc">1,000 单 × ¥5</td>
+                    <td class="num">¥5,000</td>
+                    <td class="num">8.1%</td>
+                </tr>
+                <tr>
+                    <td>退货运费</td>
+                    <td class="calc">150 单 × ¥1.2</td>
+                    <td class="num">¥180</td>
+                    <td class="num">0.3%</td>
+                </tr>
+                <tr>
+                    <td>广告预算</td>
+                    <td class="calc">毛GSV ÷ 3（¥73,000 ÷ 3）</td>
+                    <td class="num">¥24,333</td>
+                    <td class="num">39.2%</td>
+                </tr>
+                <tr class="total-row">
+                    <td>总成本</td>
+                    <td class="calc">产品+佣金+发货+退货+广告</td>
+                    <td class="num">¥60,431</td>
+                    <td class="num">97.4%</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="note">总成本占净GSV 97.4% < 100%，已盈利。产品成本按售出量850双计算（退货150双退回可再售）。备货资金占用 ¥35,000（1000双）体现在启动资金中。</div>
+    </div>
+
+    <!-- ④ 盈亏 -->
+    <div class="section">
+        <div class="section-title">④ 盈亏分析</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>指标</th>
+                    <th>计算方式</th>
+                    <th style="text-align:right;">结果</th>
+                    <th style="text-align:right;">状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="highlight">
+                    <td>净利润</td>
+                    <td class="calc">净GSV − 总成本（¥62,050 − ¥60,431）</td>
+                    <td class="num profit">+¥1,619</td>
+                    <td><span class="badge badge-profit">盈利</span></td>
+                </tr>
+                <tr>
+                    <td>利润率</td>
+                    <td class="calc">净利润 ÷ 净GSV</td>
+                    <td class="num profit">2.6%</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>盈亏平衡 ROAS</td>
+                    <td class="calc">毛GSV ÷ (净GSV − 非广告成本)</td>
+                    <td class="num">2.81</td>
+                    <td><span class="badge badge-profit">已达标</span></td>
+                </tr>
+                <tr>
+                    <td>当前 ROAS</td>
+                    <td class="calc">毛GSV ÷ 广告预算</td>
+                    <td class="num">3.00</td>
+                    <td><span class="badge badge-profit">超 0.19</span></td>
+                </tr>
+                <tr>
+                    <td>毛利率（扣产品成本）</td>
+                    <td class="calc">(净GSV − 产品成本) ÷ 净GSV</td>
+                    <td class="num">52.1%</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>每单广告成本</td>
+                    <td class="calc">广告预算 ÷ 备货量</td>
+                    <td class="num">¥24.33</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>CPA（每成交单广告成本）</td>
+                    <td class="calc">广告预算 ÷ 净成交单量</td>
+                    <td class="num">¥28.63</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>所需启动资金</td>
+                    <td class="calc">备货成本（1000双×¥35）+ 广告预算</td>
+                    <td class="num">¥59,333</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>退货损失合计</td>
+                    <td class="calc">退款¥10,950 + 退货运费¥180 + 已扣佣金¥175</td>
+                    <td class="num loss">¥11,305</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="note">
+            退货损失 = 退款 ¥10,950 + 退货运费 ¥180 + 退货已扣佣金(150×73×1.6%=¥175) ≈ ¥11,305<br>
+            退货商品（150双）退回仓库可再售，产品成本不计入本期销售成本。备货资金占用 ¥35,000 = 1000双 × ¥35，退货回库后实际售出成本 ¥29,750 = 850双 × ¥35。<br>
+            当前 ROAS 3.0 已超过盈亏平衡线 2.81，项目处于盈利状态。利润空间 ¥1,619，利润率 2.6%。
+        </div>
+    </div>
+
+    <!-- 结论 -->
+    <div class="section" style="border-left: 4px solid #52c41a;">
+        <div class="section-title" style="border-left-color: #52c41a;">结论与优化方向</div>
+        <table>
+            <tbody>
+                <tr><td style="font-weight:600;">当前状态</td><td class="profit">盈利 ¥1,619，利润率 2.6%</td></tr>
+                <tr><td style="font-weight:600;">核心逻辑</td><td>产品成本按售出量850双计算（退货150双退回可再售），ROAS 3.0 已超盈亏平衡线 2.81</td></tr>
+                <tr><td style="font-weight:600;">利润空间</td><td>总成本占净GSV 97.4%，剩余 2.6% 为利润。利润较薄，需持续优化</td></tr>
+                <tr><td style="font-weight:600;">优化方向①</td><td>提升 ROAS 至 3.5+（每提升 0.1 ≈ 增加利润 ¥767，ROAS 3.5 时利润约 ¥5,434）</td></tr>
+                <tr><td style="font-weight:600;">优化方向②</td><td>降低产品成本至 ¥30/双（售出成本降 ¥4,250，利润增至 ¥5,869）</td></tr>
+                <tr><td style="font-weight:600;">优化方向③</td><td>降低退货率至 10%（减少退款 ¥3,650 + 运费损失，利润增至 ¥5,269+）</td></tr>
+                <tr><td style="font-weight:600;">优化方向④</td><td>提高售价至 ¥78+（每双+¥5，净增收收 ¥4,250，利润增至 ¥5,869+）</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
