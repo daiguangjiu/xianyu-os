@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>闲鱼商业决策系统 V3（云端版 · 数据持久化）</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -2607,29 +2610,44 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.5.0';
-var BUILD_TIME = '2026-07-23 17:33';
+var APP_VERSION = 'v3.5.1';
+var BUILD_TIME = '2026-07-23 17:44';
 function checkUpdate() {
     var el = document.getElementById('versionStatus');
-    el.textContent = '检查中...';
-    el.style.color = '#1677ff';
+    if (el) { el.textContent = '检查中...'; el.style.color = '#1677ff'; }
     fetch('version.json?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.version !== APP_VERSION) {
-                el.innerHTML = '发现新版本 ' + data.version + '（' + (data.buildTime || '') + '），当前页面为缓存旧版，<a href="javascript:location.reload(true)" style="color:#d4380d;text-decoration:underline;cursor:pointer;">点此强制刷新</a>';
-                el.style.color = '#d4380d';
+                if (el) {
+                    el.innerHTML = '发现新版本 ' + data.version + '，正在自动刷新...';
+                    el.style.color = '#d4380d';
+                }
+                if (!sessionStorage.getItem('autoRefreshed')) {
+                    sessionStorage.setItem('autoRefreshed', '1');
+                    setTimeout(function() { location.reload(true); }, 1500);
+                } else {
+                    if (el) {
+                        el.innerHTML = '已尝试自动刷新但仍为旧版，请 <a href="javascript:location.reload(true)" style="color:#d4380d;text-decoration:underline;cursor:pointer;">点此手动强制刷新</a> 或清除浏览器缓存';
+                    }
+                }
             } else {
-                el.textContent = '已是最新版本';
-                el.style.color = '#52c41a';
+                if (el) { el.textContent = '已是最新版本'; el.style.color = '#52c41a'; }
+                sessionStorage.removeItem('autoRefreshed');
             }
         })
         .catch(function(e) {
-            el.textContent = '无法检查更新';
-            el.style.color = '#bfbfbf';
+            if (el) { el.textContent = '无法检查更新'; el.style.color = '#bfbfbf'; }
         });
 }
-setTimeout(function() { checkUpdate(); }, 5000);
+// 清理可能残留的 Service Worker 缓存
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) { reg.unregister(); });
+    });
+}
+// 页面加载后自动检查更新（2秒延迟确保 DOM 就绪）
+setTimeout(function() { checkUpdate(); }, 2000);
 </script>
 
 
