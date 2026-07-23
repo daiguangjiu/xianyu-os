@@ -1,0 +1,11 @@
+# WorkBuddy project data (contains conversation history, memory, etc.)
+.workbuddy/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Deploy temp dirs (content already in root or deploy_*)
+# Keep deploy_* dirs for reference

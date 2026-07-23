@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闲鱼商业决策系统 · 管理后台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5; color: #1f1f1f; padding: 24px; line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 26px; margin-bottom: 6px; }
+        .header .subtitle { font-size: 14px; color: #8c8c8c; }
+
+        .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card h2 { font-size: 17px; border-left: 3px solid #722ed1; padding-left: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card h3 { font-size: 14px; color: #595959; margin: 16px 0 8px 0; }
+
+        .status-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 0; }
+        .status-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
+        .badge.online { background: #f6ffed; color: #52c41a; }
+        .badge.offline { background: #f5f5f5; color: #8c8c8c; }
+        .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+        .btn { padding: 8px 18px; border: 1px solid #d9d9d9; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { border-color: #1677ff; color: #1677ff; }
+        .btn.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+        .btn.primary:hover { background: #0958d9; }
+        .btn.danger { background: #fff; color: #ff4d4f; border-color: #ffccc7; }
+        .btn.danger:hover { background: #fff2f0; }
+        .btn.admin { background: #722ed1; color: #fff; border-color: #722ed1; }
+        .btn.admin:hover { background: #531dab; }
+
+        .admin-badge { display: inline-block; background: #722ed1; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 8px; margin-left: 8px; }
+        .readonly-badge { display: inline-block; background: #fff7e6; color: #fa8c16; font-size: 11px; padding: 2px 10px; border-radius: 8px; border: 1px solid #ffd591; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #595959; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; }
+        .form-group input:focus { border-color: #1677ff; }
+
+        .status-text { font-size: 13px; color: #8c8c8c; min-height: 20px; margin-top: 8px; }
+        .status-text.error { color: #ff4d4f; }
+        .status-text.success { color: #52c41a; }
+        .status-text.info { color: #1677ff; }
+        .note-mini { font-size: 12px; color: #8c8c8c; margin-top: 12px; line-height: 1.7; }
+
+        /* 概览统计 */
+        .stat { display: inline-flex; align-items: baseline; gap: 4px; background: #f9f0ff; padding: 6px 14px; border-radius: 8px; font-size: 13px; margin-right: 8px; margin-bottom: 8px; }
+        .stat .num { font-size: 18px; font-weight: 700; color: #722ed1; }
+
+        /* 用户卡片网格 */
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+        .user-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 10px; padding: 18px; cursor: pointer; transition: all 0.2s; }
+        .user-card:hover { border-color: #722ed1; box-shadow: 0 4px 12px rgba(114,46,209,0.12); transform: translateY(-1px); }
+        .user-card .email { font-size: 15px; font-weight: 600; color: #1f1f1f; word-break: break-all; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .user-card .meta { font-size: 12px; color: #8c8c8c; line-height: 1.8; }
+        .user-card .counts { display: flex; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5; }
+        .user-card .count-item { font-size: 13px; }
+        .user-card .count-item .n { font-size: 18px; font-weight: 700; color: #722ed1; }
+        .user-card .arrow { color: #d9d9d9; font-size: 18px; transition: color 0.2s; }
+        .user-card:hover .arrow { color: #722ed1; }
+
+        /* 诊断面板 */
+        .diag-box { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .diag-box .title { color: #d48806; font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+        .diag-box .desc { font-size: 13px; color: #595959; line-height: 1.7; margin-bottom: 10px; }
+        .diag-box .code { background: #fafafa; border: 1px solid #d9d9d9; border-radius: 4px; padding: 10px; font-size: 12px; font-family: "SF Mono", Menlo, monospace; color: #cf1322; margin-bottom: 10px; word-break: break-all; }
+        .diag-box textarea { width: 100%; height: 240px; font-size: 11px; font-family: "SF Mono", Menlo, monospace; background: #fafafa; border: 1px solid #d9d9d9; border-radius: 4px; padding: 8px; resize: vertical; line-height: 1.4; color: #333; }
+
+        .empty { text-align: center; color: #bfbfbf; padding: 40px; font-size: 14px; }
+        .error-box { background: #fff2f0; border: 1px solid #ffccc7; color: #cf1322; padding: 12px 16px; border-radius: 6px; font-size: 13px; line-height: 1.7; }
+
+        .login-box { max-width: 400px; margin: 0 auto; }
+        .login-box h2 { border-left-color: #1677ff; justify-content: center; }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 500; color: #8c8c8c; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab.active { color: #1677ff; border-bottom-color: #1677ff; }
+
+        /* 详情页 */
+        .detail-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+        .detail-header .left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .detail-header .email { font-size: 18px; font-weight: 600; }
+        .detail-header .meta { font-size: 13px; color: #8c8c8c; }
+
+        .project-select { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+        .project-select label { font-size: 14px; font-weight: 600; color: #595959; }
+        .project-select select { padding: 8px 14px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; background: #fff; cursor: pointer; min-width: 200px; }
+        .project-select select:focus { border-color: #722ed1; outline: none; }
+
+        .detail-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #f0f0f0; }
+        .dtab { padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 500; color: #8c8c8c; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .dtab.active { color: #722ed1; border-bottom-color: #722ed1; }
+
+        /* 参数表 */
+        .param-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+        .param-item { display: flex; align-items: center; gap: 8px; }
+        .param-item label { font-size: 13px; color: #595959; min-width: 90px; text-align: right; white-space: nowrap; }
+        .param-input { flex: 1; display: flex; align-items: center; border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; }
+        .param-input .prefix, .param-input .suffix { padding: 0 8px; color: #8c8c8c; font-size: 13px; background: #fafafa; height: 32px; display: flex; align-items: center; white-space: nowrap; }
+        .param-input input { flex: 1; border: none; padding: 5px 8px; font-size: 13px; outline: none; min-width: 0; }
+        .param-input:focus-within { border-color: #fa8c16; }
+
+        /* 汇总卡片 */
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        .summary-card { background: #fff; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid #f0f0f0; }
+        .summary-card .label { font-size: 12px; color: #8c8c8c; margin-bottom: 6px; }
+        .summary-card .value { font-size: 20px; font-weight: 700; }
+        .summary-card .value.profit { color: #52c41a; }
+        .summary-card .value.loss { color: #ff4d4f; }
+        .summary-card .value.neutral { color: #1677ff; }
+
+        /* 表格 */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; font-weight: 600; color: #595959; font-size: 12px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "SF Mono", "Menlo", monospace; }
+        .profit { color: #52c41a; font-weight: 600; }
+        .loss { color: #ff4d4f; font-weight: 600; }
+
+        /* 指标网格 */
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .metric { background: #fafafa; border-radius: 8px; padding: 14px; text-align: center; }
+        .metric .label { font-size: 12px; color: #8c8c8c; margin-bottom: 6px; }
+        .metric .value { font-size: 18px; font-weight: 700; }
+        .metric .value.highlight { color: #722ed1; }
+
+        .hidden { display: none; }
+        .mb-2 { margin-bottom: 12px; }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .param-grid, .summary-grid, .metrics-grid { grid-template-columns: 1fr; }
+            .user-grid { grid-template-columns: 1fr; }
+            table { font-size: 12px; }
+            th, td { padding: 6px 8px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>闲鱼商业决策系统 · 管理后台</h1>
+        <p class="subtitle">仅管理员可访问 · 用户 / 项目 / 数据统一管理</p>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="card">
+        <div class="status-bar">
+            <div class="status-left">
+                <span class="badge offline" id="connBadge">
+                    <span class="dot"></span>
+                    <span id="connText">未连接</span>
+                </span>
+                <span id="userText" style="font-size:13px;color:#595959;"></span>
+            </div>
+            <div>
+                <button class="btn primary" id="authToggleBtn" onclick="toggleAuth()" style="display:none;">登录</button>
+                <button class="btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">退出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录/注册 -->
+    <div class="card login-box" id="authCard">
+        <h2>管理员登录</h2>
+        <div class="tabs">
+            <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
+            <div class="tab" id="tabRegister" onclick="switchTab('register')">注册</div>
+        </div>
+        <div class="form-group">
+            <label>邮箱</label>
+            <input type="email" id="authEmail" placeholder="admin@example.com">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="authPassword" placeholder="至少 6 位">
+        </div>
+        <div class="status-text error" id="authError"></div>
+        <button class="btn primary" style="width:100%;" onclick="doAuth()" id="authBtn">登录</button>
+        <div class="note-mini" style="text-align:center;">
+            本后台仅对 <strong>ahhsxycb@163.com</strong> 开放管理权限。非管理员邮箱登录后将无法查看任何数据。
+        </div>
+    </div>
+
+    <!-- 无权限提示 -->
+    <div class="card hidden" id="noAccessCard">
+        <div class="error-box">
+            <strong>无权限访问</strong><br>
+            当前账号 <span id="noAccessEmail"></span> 不是管理员。本后台仅对 ahhsxycb@163.com 开放。
+        </div>
+        <button class="btn" style="margin-top:16px;" onclick="doLogout()">退出并重新登录</button>
+    </div>
+
+    <!-- 管理后台主内容 -->
+    <div class="hidden" id="adminContent">
+
+        <!-- ====== 视图A：用户列表 ====== -->
+        <div id="viewUsers">
+            <div class="card">
+                <h2>概览 <span class="admin-badge">ADMIN</span></h2>
+                <div id="overviewStats" class="mb-2">
+                    <span class="stat"><span class="num" id="ovUsers">0</span> 注册用户</span>
+                    <span class="stat"><span class="num" id="ovProjects">0</span> 项目</span>
+                    <span class="stat"><span class="num" id="ovDaily">0</span> 每日记录</span>
+                </div>
+                <button class="btn admin" onclick="loadAll()">刷新全部数据</button>
+                <span style="font-size:12px;color:#8c8c8c;margin-left:10px;">点击用户卡片可查看该用户的经营详情</span>
+            </div>
+
+            <!-- 诊断面板（RPC失败时显示） -->
+            <div class="card hidden" id="diagCard">
+                <div class="diag-box">
+                    <div class="title">⚠ 管理员函数未生效</div>
+                    <div class="desc">
+                        Supabase 连接正常，但管理员 RPC 函数调用失败。常见原因：<strong>schema.sql 第7节未执行</strong>，或执行后 schema cache 未刷新。<br>
+                        请到 <strong>Supabase Dashboard → SQL Editor</strong> 粘贴执行以下 SQL，等待 10-30 秒后点「刷新全部数据」重试。
+                    </div>
+                    <div class="code" id="diagError"></div>
+                    <textarea id="diagSql" readonly onclick="this.select()">-- ========== 管理员函数修复脚本 ==========
+-- 在 Supabase Dashboard -> SQL Editor 中粘贴执行
+
+-- 管理员邮箱常量（修改此处可更换管理员）
+CREATE OR REPLACE FUNCTION admin_email()
+RETURNS TEXT AS $$
+BEGIN
+    RETURN 'ahhsxycb@163.com';
+END;
+$$ LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER;
+
+-- 检查当前调用者是否为管理员
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+DECLARE
+    current_user_email TEXT;
+BEGIN
+    SELECT email INTO current_user_email
+    FROM auth.users
+    WHERE id = auth.uid();
+    RETURN current_user_email = admin_email();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ⚠ 先删除旧版函数（返回类型变更时 CREATE OR REPLACE 会报 42P13 错误，必须先 DROP）
+DROP FUNCTION IF EXISTS admin_list_users();
+DROP FUNCTION IF EXISTS admin_list_projects();
+DROP FUNCTION IF EXISTS admin_list_daily_data();
+
+-- 管理员：查看所有注册用户
+CREATE OR REPLACE FUNCTION admin_list_users()
+RETURNS TABLE (
+    user_id UUID,
+    email TEXT,
+    created_at TIMESTAMPTZ,
+    last_sign_in_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    IF NOT is_admin() THEN
+        RAISE EXCEPTION 'Access denied';
+    END IF;
+    RETURN QUERY
+    SELECT u.id::UUID, u.email::TEXT, u.created_at::TIMESTAMPTZ, u.last_sign_in_at::TIMESTAMPTZ
+    FROM auth.users u
+    ORDER BY u.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 管理员：查看所有项目
+CREATE OR REPLACE FUNCTION admin_list_projects()
+RETURNS TABLE (
+    project_id UUID,
+    project_name TEXT,
+    owner_email TEXT,
+    user_id UUID,
+    industry TEXT,
+    quantity INTEGER,
+    price NUMERIC,
+    product_cost NUMERIC,
+    return_rate NUMERIC,
+    ratio NUMERIC,
+    platform_fee NUMERIC,
+    shipping NUMERIC,
+    return_ship NUMERIC,
+    daily_orders INTEGER,
+    wuyoumai BOOLEAN,
+    price_reduction NUMERIC,
+    wm_comm NUMERIC,
+    funnel_cpc NUMERIC,
+    funnel_ctr NUMERIC,
+    funnel_consult NUMERIC,
+    funnel_convert NUMERIC,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    IF NOT is_admin() THEN
+        RAISE EXCEPTION 'Access denied';
+    END IF;
+    RETURN QUERY
+    SELECT
+        p.id::UUID AS project_id,
+        p.name::TEXT AS project_name,
+        u.email::TEXT AS owner_email,
+        p.user_id::UUID,
+        p.industry::TEXT,
+        p.quantity::INTEGER,
+        p.price::NUMERIC,
+        p.product_cost::NUMERIC,
+        p.return_rate::NUMERIC,
+        p.ratio::NUMERIC,
+        p.platform_fee::NUMERIC,
+        p.shipping::NUMERIC,
+        p.return_ship::NUMERIC,
+        p.daily_orders::INTEGER,
+        p.wuyoumai::BOOLEAN,
+        p.price_reduction::NUMERIC,
+        p.wm_comm::NUMERIC,
+        p.funnel_cpc::NUMERIC,
+        p.funnel_ctr::NUMERIC,
+        p.funnel_consult::NUMERIC,
+        p.funnel_convert::NUMERIC,
+        p.created_at::TIMESTAMPTZ
+    FROM projects p
+    JOIN auth.users u ON p.user_id = u.id
+    ORDER BY p.created_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 管理员：查看所有每日数据
+CREATE OR REPLACE FUNCTION admin_list_daily_data()
+RETURNS TABLE (
+    data_id UUID,
+    project_id UUID,
+    project_name TEXT,
+    owner_email TEXT,
+    user_id UUID,
+    data_date DATE,
+    spend NUMERIC,
+    impressions INTEGER,
+    clicks INTEGER,
+    consult INTEGER,
+    orders INTEGER,
+    returns INTEGER
+) AS $$
+BEGIN
+    IF NOT is_admin() THEN
+        RAISE EXCEPTION 'Access denied';
+    END IF;
+    RETURN QUERY
+    SELECT
+        d.id::UUID AS data_id,
+        d.project_id::UUID,
+        p.name::TEXT AS project_name,
+        u.email::TEXT AS owner_email,
+        d.user_id::UUID,
+        d.date::DATE AS data_date,
+        d.spend::NUMERIC,
+        d.impressions::INTEGER,
+        d.clicks::INTEGER,
+        d.consult::INTEGER,
+        d.orders::INTEGER,
+        d.returns::INTEGER
+    FROM daily_data d
+    JOIN projects p ON d.project_id = p.id
+    JOIN auth.users u ON d.user_id = u.id
+    ORDER BY d.date DESC, u.email;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 刷新 PostgREST schema cache（关键！让函数立即可用）
+NOTIFY pgrst, 'reload schema';
+</textarea>
+                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+                        <button class="btn primary" onclick="copyDiagSql()">复制 SQL</button>
+                        <span style="font-size:12px;color:#8c8c8c;">执行后等待 10-30 秒，再点上方「刷新全部数据」</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户列表 -->
+            <div class="card">
+                <h2>注册用户</h2>
+                <div id="usersSection">
+                    <div class="empty">点击「刷新全部数据」加载</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== 视图B：用户详情 ====== -->
+        <div id="viewDetail" class="hidden">
+            <div class="card">
+                <div class="detail-header">
+                    <div class="left">
+                        <button class="btn" onclick="backToUsers()">← 返回用户列表</button>
+                        <span class="email" id="detailEmail"></span>
+                        <span class="readonly-badge">只读视图 · 修改不保存</span>
+                    </div>
+                    <div class="meta" id="detailMeta"></div>
+                </div>
+                <div class="project-select">
+                    <label>选择项目：</label>
+                    <select id="projectSelector" onchange="onProjectChange()"></select>
+                </div>
+                <div class="detail-tabs">
+                    <div class="dtab active" onclick="switchDTab('dashboard', event)">经营看板</div>
+                    <div class="dtab" onclick="switchDTab('params', event)">项目参数</div>
+                    <div class="dtab" onclick="switchDTab('daily', event)">每日数据</div>
+                </div>
+            </div>
+
+            <!-- 经营看板 -->
+            <div id="dtabDashboard">
+                <div class="card">
+                    <h2>经营汇总</h2>
+                    <div class="summary-grid">
+                        <div class="summary-card"><div class="label">净销售额</div><div class="value neutral" id="sNetGSV">—</div></div>
+                        <div class="summary-card"><div class="label">广告预算</div><div class="value neutral" id="sAdBudget">—</div></div>
+                        <div class="summary-card"><div class="label">总成本</div><div class="value neutral" id="sTotalCost">—</div></div>
+                        <div class="summary-card"><div class="label">利润</div><div class="value" id="sProfit">—</div></div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric"><div class="label">ROAS</div><div class="value highlight" id="mROAS">—</div></div>
+                        <div class="metric"><div class="label">CPA（单次成交成本）</div><div class="value" id="mCPA">—</div></div>
+                        <div class="metric"><div class="label">利润率</div><div class="value" id="mProfitRate">—</div></div>
+                        <div class="metric"><div class="label">盈亏平衡 ROAS</div><div class="value" id="mBreakEven">—</div></div>
+                        <div class="metric"><div class="label">毛利率</div><div class="value" id="mGrossMargin">—</div></div>
+                        <div class="metric"><div class="label">启动资金</div><div class="value" id="mStartup">—</div></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>销售测算</h2>
+                    <table><thead><tr><th>项目</th><th style="text-align:right;">数量</th><th style="text-align:right;">单价</th><th style="text-align:right;">金额</th></tr></thead><tbody id="salesBody"></tbody></table>
+                </div>
+
+                <div class="card">
+                    <h2>成本明细</h2>
+                    <table><thead><tr><th>成本项</th><th style="text-align:right;">金额</th><th style="text-align:right;">占比</th></tr></thead><tbody id="costBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- 项目参数 -->
+            <div id="dtabParams" class="hidden">
+                <div class="card">
+                    <h2>项目参数 <span style="font-size:12px;color:#fa8c16;font-weight:400;">（可调整用于模拟测算，不会保存）</span></h2>
+                    <h3>基础参数</h3>
+                    <div class="param-grid" id="paramGrid"></div>
+                    <div style="margin-top:16px;">
+                        <button class="btn primary" onclick="simulateCalc()">重新计算</button>
+                        <button class="btn" onclick="resetParams()">恢复原始参数</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日数据 -->
+            <div id="dtabDaily" class="hidden">
+                <div class="card">
+                    <h2>每日投放数据</h2>
+                    <div id="dailyStats" class="mb-2"></div>
+                    <div id="dailyTable"><div class="empty">暂无数据</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== 常量 ==========
+var ADMIN_EMAIL = 'ahhsxycb@163.com';
+var SB_URL = 'https://rrlngimtenxilfomxgju.supabase.co';
+var SB_KEY = 'sb_publishable_CcU32V_oh1k01fKq-pbBTw_HxSrn1sv';
+
+// ========== 状态 ==========
+var sb = null;
+var sbUser = null;
+var authMode = 'login';
+var allUsers = [];
+var allProjects = [];
+var allDaily = [];
+var detailEmail = null;
+var detailUserId = null;
+var detailProjects = [];
+var currentProject = null;
+var currentDTab = 'dashboard';
+
+// ========== 工具函数 ==========
+function fmt(n, d) { if (d === undefined) d = 2; if (!isFinite(n)) return '—'; return '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt0(n) { return fmt(n, 0); }
+function fmtInt(n) { return Number(n || 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 }); }
+function fmtPct(n) { return (Number(n) * 100).toFixed(1) + '%'; }
+function fmtDate(d) { return d ? new Date(d).toLocaleString('zh-CN', { hour12: false }) : '-'; }
+function fmtDateOnly(d) { return d ? new Date(d).toISOString().slice(0, 10) : '-'; }
+function sign(n) { return n >= 0 ? '+' : ''; }
+
+// ========== 核心计算（复用 V3 逻辑） ==========
+function calc(p) {
+    var price = p.price, productCost = p.productCost, quantity = p.quantity;
+    var returnRate = p.returnRate, ratio = p.ratio, platformFeeRate = p.platformFeeRate;
+    var shipping = p.shipping, returnShipping = p.returnShipping, dailyOrders = p.dailyOrders;
+    var wmEnabled = p.wmEnabled;
+    var priceReduction = wmEnabled ? p.priceReduction : 0;
+    var wmCommRate = wmEnabled ? p.wmCommRate : 0;
+
+    var actualPrice = price - priceReduction;
+    var grossGSV = quantity * actualPrice;
+    var returnCount = Math.round(quantity * returnRate);
+    var returnRefund = returnCount * actualPrice;
+    var netGSV = grossGSV - returnRefund;
+    var validOrders = quantity - returnCount;
+    var totalProductCost = quantity * productCost;
+    // 交易服务费按全部成交单扣取（确认收货即扣，退货不退佣金）
+    var platformFee = wmEnabled ? 0 : grossGSV * platformFeeRate;
+    var wmCommission = wmEnabled ? grossGSV * wmCommRate : 0;
+    var totalShipping = quantity * shipping;
+    var totalReturnShip = returnCount * returnShipping;
+    var nonAdCost = totalProductCost + platformFee + wmCommission + totalShipping + totalReturnShip;
+    var adBudget = grossGSV / ratio;
+    var totalCost = nonAdCost + adBudget;
+    var profit = netGSV - totalCost;
+    var profitRate = netGSV > 0 ? profit / netGSV : 0;
+    var roas = adBudget > 0 ? grossGSV / adBudget : 0;
+    var cpa = validOrders > 0 ? adBudget / validOrders : 0;
+    var grossMargin = netGSV > 0 ? (netGSV - totalProductCost) / netGSV : 0;
+    var breakEvenROAS = (netGSV - nonAdCost) > 0 ? grossGSV / (netGSV - nonAdCost) : Infinity;
+    var sellingDays = Math.ceil(quantity / Math.max(dailyOrders, 1));
+    var startupCapital = totalProductCost + adBudget;
+    var totalReduction = quantity * priceReduction;
+
+    return {
+        actualPrice: actualPrice, grossGSV: grossGSV, returnCount: returnCount, returnRefund: returnRefund,
+        netGSV: netGSV, validOrders: validOrders,
+        totalProductCost: totalProductCost, platformFee: platformFee, wmCommission: wmCommission,
+        totalShipping: totalShipping, totalReturnShip: totalReturnShip, nonAdCost: nonAdCost,
+        adBudget: adBudget, totalCost: totalCost, profit: profit, profitRate: profitRate,
+        roas: roas, cpa: cpa, grossMargin: grossMargin, breakEvenROAS: breakEvenROAS,
+        sellingDays: sellingDays, startupCapital: startupCapital, totalReduction: totalReduction,
+        wmEnabled: wmEnabled, priceReduction: priceReduction
+    };
+}
+
+// ========== 初始化 ==========
+document.addEventListener('DOMContentLoaded', function() {
+    initClient();
+});
+
+function initClient() {
+    if (typeof supabase === 'undefined') { updateUI(); return; }
+    try {
+        sb = supabase.createClient(SB_URL, SB_KEY);
+        sb.auth.getSession().then(function(res) {
+            if (res.data && res.data.session) {
+                sbUser = res.data.session.user;
+            }
+            updateUI();
+        }).catch(function(e) {
+            console.error(e);
+            sb = null;
+            updateUI();
+        });
+    } catch (e) {
+        console.error(e);
+        sb = null;
+        updateUI();
+    }
+}
+
+function updateUI() {
+    var connBadge = document.getElementById('connBadge');
+    var connText = document.getElementById('connText');
+    var userText = document.getElementById('userText');
+    var authToggleBtn = document.getElementById('authToggleBtn');
+    var logoutBtn = document.getElementById('logoutBtn');
+    var authCard = document.getElementById('authCard');
+    var noAccessCard = document.getElementById('noAccessCard');
+    var adminContent = document.getElementById('adminContent');
+
+    if (!sb) {
+        connBadge.className = 'badge offline';
+        connText.textContent = '正在连接...';
+        userText.textContent = '';
+        authToggleBtn.style.display = '';
+        authToggleBtn.textContent = '登录';
+        logoutBtn.style.display = 'none';
+        authCard.classList.remove('hidden');
+        noAccessCard.classList.add('hidden');
+        adminContent.classList.add('hidden');
+    } else if (!sbUser) {
+        connBadge.className = 'badge offline';
+        connText.textContent = '请登录';
+        userText.textContent = '';
+        authToggleBtn.style.display = '';
+        authToggleBtn.textContent = '登录';
+        logoutBtn.style.display = 'none';
+        authCard.classList.remove('hidden');
+        noAccessCard.classList.add('hidden');
+        adminContent.classList.add('hidden');
+    } else if (sbUser.email !== ADMIN_EMAIL) {
+        connBadge.className = 'badge offline';
+        connText.textContent = '已登录';
+        userText.textContent = sbUser.email;
+        authToggleBtn.style.display = 'none';
+        logoutBtn.style.display = '';
+        authCard.classList.add('hidden');
+        noAccessCard.classList.remove('hidden');
+        document.getElementById('noAccessEmail').textContent = sbUser.email;
+        adminContent.classList.add('hidden');
+    } else {
+        connBadge.className = 'badge online';
+        connText.textContent = '管理员已连接';
+        userText.innerHTML = sbUser.email + '<span class="admin-badge">管理员</span>';
+        authToggleBtn.style.display = 'none';
+        logoutBtn.style.display = '';
+        authCard.classList.add('hidden');
+        noAccessCard.classList.add('hidden');
+        adminContent.classList.remove('hidden');
+        if (allUsers.length === 0 && allProjects.length === 0) {
+            loadAll();
+        }
+    }
+}
+
+function toggleAuth() {
+    document.getElementById('authCard').classList.toggle('hidden');
+}
+
+function switchTab(mode) {
+    authMode = mode;
+    document.getElementById('tabLogin').className = 'tab' + (mode === 'login' ? ' active' : '');
+    document.getElementById('tabRegister').className = 'tab' + (mode === 'register' ? ' active' : '');
+    document.getElementById('authBtn').textContent = mode === 'login' ? '登录' : '注册';
+    document.getElementById('authError').textContent = '';
+}
+
+function setAuthError(msg) {
+    document.getElementById('authError').textContent = msg || '';
+}
+
+async function doAuth() {
+    if (!sb) { setAuthError('正在连接服务器，请稍后重试'); return; }
+    var email = document.getElementById('authEmail').value.trim();
+    var pwd = document.getElementById('authPassword').value.trim();
+    if (!email || !pwd) { setAuthError('请填写邮箱和密码'); return; }
+    setAuthError('');
+    try {
+        var res;
+        if (authMode === 'login') {
+            res = await sb.auth.signInWithPassword({ email: email, password: pwd });
+        } else {
+            res = await sb.auth.signUp({ email: email, password: pwd, emailRedirectTo: window.location.href });
+        }
+        if (res.error) { setAuthError(res.error.message); return; }
+        if (authMode === 'register') {
+            setAuthError('注册成功，请查看邮箱确认邮件后登录。');
+            return;
+        }
+        sbUser = res.data.user;
+        updateUI();
+    } catch (e) {
+        setAuthError('异常：' + e.message);
+    }
+}
+
+async function doLogout() {
+    if (sb) await sb.auth.signOut().catch(function(){});
+    sbUser = null;
+    allUsers = []; allProjects = []; allDaily = [];
+    updateUI();
+}
+
+// ========== 数据加载 ==========
+async function loadAll() {
+    if (!sb || !sbUser || sbUser.email !== ADMIN_EMAIL) return;
+    document.getElementById('diagCard').classList.add('hidden');
+    var el = document.getElementById('usersSection');
+    el.innerHTML = '<div class="empty">加载中...</div>';
+
+    // 第一步：测试 admin_email 函数是否存在
+    try {
+        var testRes = await sb.rpc('admin_email');
+        if (testRes.error) {
+            showDiagnostic(testRes.error);
+            el.innerHTML = '<div class="empty">管理员函数未生效，请查看上方诊断面板</div>';
+            return;
+        }
+    } catch (e) {
+        showDiagnostic({ message: e.message || String(e) });
+        el.innerHTML = '<div class="empty">连接异常，请查看上方诊断面板</div>';
+        return;
+    }
+
+    // 第二步：并行加载三个列表
+    try {
+        var results = await Promise.all([
+            sb.rpc('admin_list_users'),
+            sb.rpc('admin_list_projects'),
+            sb.rpc('admin_list_daily_data')
+        ]);
+
+        // 用户
+        if (results[0].error) throw new Error('用户列表：' + results[0].error.message);
+        allUsers = results[0].data || [];
+        document.getElementById('ovUsers').textContent = allUsers.length;
+
+        // 项目
+        if (results[1].error) throw new Error('项目列表：' + results[1].error.message);
+        allProjects = results[1].data || [];
+        document.getElementById('ovProjects').textContent = allProjects.length;
+
+        // 每日数据
+        if (results[2].error) throw new Error('每日数据：' + results[2].error.message);
+        allDaily = results[2].data || [];
+        document.getElementById('ovDaily').textContent = allDaily.length;
+
+        renderUsers();
+    } catch (e) {
+        showDiagnostic({ message: e.message });
+        el.innerHTML = '<div class="error-box">加载失败：' + e.message + '<br>请查看上方诊断面板。</div>';
+    }
+}
+
+function showDiagnostic(error) {
+    document.getElementById('diagCard').classList.remove('hidden');
+    var msg = error.message || error.toString();
+    var hint = '';
+    if (msg.indexOf('Could not find') >= 0 || msg.indexOf('schema cache') >= 0) {
+        hint = '【根因】管理员 RPC 函数未在数据库中定义。\n【修复】执行下方 SQL → 等待 30 秒 → 刷新重试';
+    } else if (msg.indexOf('Access denied') >= 0) {
+        hint = '【根因】当前登录账号不是管理员。\n【修复】请用 ' + ADMIN_EMAIL + ' 登录';
+    } else if (msg.indexOf('Failed to fetch') >= 0 || msg.indexOf('Network') >= 0) {
+        hint = '【根因】无法连接 Supabase 服务器。\n【修复】检查网络或 Supabase 项目是否暂停';
+    } else {
+        hint = '【未知错误】请将上方错误信息反馈给开发者';
+    }
+    document.getElementById('diagError').textContent = '错误信息：' + msg + '\n\n' + hint;
+}
+
+function copyDiagSql() {
+    var ta = document.getElementById('diagSql');
+    ta.select();
+    try {
+        document.execCommand('copy');
+        alert('SQL 已复制到剪贴板！请粘贴到 Supabase SQL Editor 执行');
+    } catch (e) {
+        alert('请手动选中全部 SQL 文本并复制');
+    }
+}
+
+// ========== 视图A：用户列表渲染 ==========
+function renderUsers() {
+    var el = document.getElementById('usersSection');
+    if (allUsers.length === 0) {
+        el.innerHTML = '<div class="empty">暂无注册用户</div>';
+        return;
+    }
+
+    var html = '<div class="user-grid">';
+    allUsers.forEach(function(u) {
+        var isAdmin = u.email === ADMIN_EMAIL;
+        var userProjects = allProjects.filter(function(p) { return p.owner_email === u.email; });
+        var userDaily = allDaily.filter(function(d) { return d.owner_email === u.email; });
+        var lastLogin = u.last_sign_in_at ? fmtDate(u.last_sign_in_at) : '从未登录';
+        var created = u.created_at ? fmtDate(u.created_at) : '-';
+
+        html += '<div class="user-card" onclick="showUserDetail(\'' + u.email + '\')">';
+        html += '<div class="email">' + (u.email || '-') + (isAdmin ? '<span class="admin-badge">管理员</span>' : '') + '</div>';
+        html += '<div class="meta">注册：' + created + '<br>最后登录：' + lastLogin + '</div>';
+        html += '<div class="counts">';
+        html += '<div class="count-item"><span class="n">' + userProjects.length + '</span> 个项目</div>';
+        html += '<div class="count-item"><span class="n">' + userDaily.length + '</span> 条每日数据</div>';
+        html += '<div class="arrow">→</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+// ========== 视图B：用户详情 ==========
+function showUserDetail(email) {
+    detailEmail = email;
+    detailProjects = allProjects.filter(function(p) { return p.owner_email === email; });
+    var userObj = allUsers.find(function(u) { return u.email === email; });
+    detailUserId = userObj ? userObj.user_id : null;
+
+    document.getElementById('viewUsers').classList.add('hidden');
+    document.getElementById('viewDetail').classList.remove('hidden');
+    document.getElementById('detailEmail').textContent = email;
+
+    var metaParts = [];
+    if (userObj) {
+        if (userObj.created_at) metaParts.push('注册：' + fmtDate(userObj.created_at));
+        if (userObj.last_sign_in_at) metaParts.push('最后登录：' + fmtDate(userObj.last_sign_in_at));
+    }
+    metaParts.push(detailProjects.length + ' 个项目');
+    document.getElementById('detailMeta').textContent = metaParts.join(' · ');
+
+    // 填充项目选择器
+    var sel = document.getElementById('projectSelector');
+    if (detailProjects.length === 0) {
+        sel.innerHTML = '<option value="">该用户暂无项目</option>';
+        document.getElementById('sNetGSV').textContent = '—';
+        document.getElementById('salesBody').innerHTML = '<tr><td colspan="4" class="empty">该用户尚未创建项目</td></tr>';
+        return;
+    }
+    sel.innerHTML = detailProjects.map(function(p, i) {
+        return '<option value="' + i + '">' + (p.project_name || '未命名') + ' · ' + (p.industry || 'custom') + '</option>';
+    }).join('');
+
+    currentProject = detailProjects[0];
+    renderProjectDetail();
+}
+
+function onProjectChange() {
+    var idx = parseInt(document.getElementById('projectSelector').value);
+    currentProject = detailProjects[idx];
+    renderProjectDetail();
+}
+
+function renderProjectDetail() {
+    if (!currentProject) return;
+    renderParams();
+    renderDaily();
+    renderDashboard();
+}
+
+function switchDTab(tab, ev) {
+    currentDTab = tab;
+    document.querySelectorAll('.dtab').forEach(function(el) { el.classList.remove('active'); });
+    ev.target.classList.add('active');
+    document.getElementById('dtabDashboard').classList.toggle('hidden', tab !== 'dashboard');
+    document.getElementById('dtabParams').classList.toggle('hidden', tab !== 'params');
+    document.getElementById('dtabDaily').classList.toggle('hidden', tab !== 'daily');
+}
+
+// ========== 项目参数 ==========
+function renderParams() {
+    var p = currentProject;
+    var html = '';
+    var fields = [
+        ['quantity', '备货总量', p.quantity, '', '双'],
+        ['price', '售价', p.price, '¥', ''],
+        ['productCost', '产品成本', p.product_cost, '¥', ''],
+        ['returnRate', '退货率', p.return_rate, '', '%'],
+        ['ratio', 'GSV:成本比', p.ratio, '1:', ''],
+        ['platformFee', '平台佣金', p.platform_fee, '', '%'],
+        ['shipping', '发货运费', p.shipping, '¥', ''],
+        ['returnShip', '退货运费', p.return_ship, '¥', ''],
+        ['dailyOrders', '日均订单', p.daily_orders, '', '单'],
+        ['priceReduction', '无忧卖降价', p.price_reduction, '¥', ''],
+        ['wmComm', '无忧卖佣金', p.wm_comm, '', '%'],
+        ['funnelCpc', '漏斗CPC', p.funnel_cpc, '¥', ''],
+        ['funnelCtr', '漏斗CTR', p.funnel_ctr, '', '%'],
+        ['funnelConsult', '咨询转化率', p.funnel_consult, '', '%'],
+        ['funnelConvert', '成交转化率', p.funnel_convert, '', '%']
+    ];
+    fields.forEach(function(f) {
+        var id = f[0], label = f[1], val = f[2], prefix = f[3], suffix = f[4];
+        html += '<div class="param-item">';
+        html += '<label>' + label + '</label>';
+        html += '<div class="param-input">';
+        if (prefix) html += '<span class="prefix">' + prefix + '</span>';
+        html += '<input type="number" step="any" id="param_' + id + '" value="' + (val || 0) + '">';
+        if (suffix) html += '<span class="suffix">' + suffix + '</span>';
+        html += '</div></div>';
+    });
+    // 无忧卖开关
+    html += '<div class="param-item" style="grid-column:1/-1;">';
+    html += '<label>无忧卖</label>';
+    html += '<input type="checkbox" id="param_wuyoumai" ' + (p.wuyoumai ? 'checked' : '') + ' style="width:18px;height:18px;">';
+    html += '<span style="font-size:13px;color:#595959;">参与无忧卖（佣金互斥：勾选后只算无忧卖佣金，不勾选只算平台佣金）</span>';
+    html += '</div>';
+    document.getElementById('paramGrid').innerHTML = html;
+}
+
+function collectSimParams() {
+    function pv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+    return {
+        price: pv('param_price'),
+        productCost: pv('param_productCost'),
+        quantity: pv('param_quantity'),
+        returnRate: pv('param_returnRate') / 100,
+        ratio: pv('param_ratio'),
+        platformFeeRate: pv('param_platformFee') / 100,
+        shipping: pv('param_shipping'),
+        returnShipping: pv('param_returnShip'),
+        dailyOrders: pv('param_dailyOrders'),
+        wmEnabled: document.getElementById('param_wuyoumai').checked,
+        priceReduction: pv('param_priceReduction'),
+        wmCommRate: pv('param_wmComm') / 100
+    };
+}
+
+function simulateCalc() {
+    var p = collectSimParams();
+    renderDashboardWithParams(p);
+}
+
+function resetParams() {
+    renderParams();
+    renderDashboard();
+}
+
+// ========== 经营看板 ==========
+function renderDashboard() {
+    var p = projectToCalcParams(currentProject);
+    renderDashboardWithParams(p);
+}
+
+function projectToCalcParams(proj) {
+    if (!proj) return null;
+    return {
+        price: Number(proj.price) || 0,
+        productCost: Number(proj.product_cost) || 0,
+        quantity: Number(proj.quantity) || 0,
+        returnRate: (Number(proj.return_rate) || 0) / 100,
+        ratio: Number(proj.ratio) || 0,
+        platformFeeRate: (Number(proj.platform_fee) || 0) / 100,
+        shipping: Number(proj.shipping) || 0,
+        returnShipping: Number(proj.return_ship) || 0,
+        dailyOrders: Number(proj.daily_orders) || 0,
+        wmEnabled: proj.wuyoumai || false,
+        priceReduction: Number(proj.price_reduction) || 0,
+        wmCommRate: (Number(proj.wm_comm) || 0) / 100
+    };
+}
+
+function renderDashboardWithParams(p) {
+    if (!p) return;
+    var r = calc(p);
+
+    // 汇总卡片
+    document.getElementById('sNetGSV').textContent = fmt0(r.netGSV);
+    document.getElementById('sAdBudget').textContent = fmt0(r.adBudget);
+    document.getElementById('sTotalCost').textContent = fmt0(r.totalCost);
+    var pEl = document.getElementById('sProfit');
+    pEl.textContent = sign(r.profit) + fmt0(r.profit);
+    pEl.className = 'value ' + (r.profit >= 0 ? 'profit' : 'loss');
+
+    // 指标
+    document.getElementById('mROAS').textContent = r.roas > 0 ? r.roas.toFixed(2) : '—';
+    document.getElementById('mCPA').textContent = fmt0(r.cpa);
+    document.getElementById('mProfitRate').textContent = fmtPct(r.profitRate);
+    document.getElementById('mBreakEven').textContent = isFinite(r.breakEvenROAS) ? r.breakEvenROAS.toFixed(2) : '∞';
+    document.getElementById('mGrossMargin').textContent = fmtPct(r.grossMargin);
+    document.getElementById('mStartup').textContent = fmt0(r.startupCapital);
+
+    // 销售测算表
+    var salesHtml = '';
+    if (p.wmEnabled) {
+        salesHtml += '<tr><td>原价/双</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmt0(p.price) + '</td><td class="num">—</td></tr>';
+        salesHtml += '<tr><td>无忧卖降价</td><td class="num">—</td><td class="num loss">-' + fmt0(r.priceReduction) + '</td><td class="num loss">-' + fmt0(r.totalReduction) + '</td></tr>';
+        salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num"><strong>' + fmt0(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt0(r.grossGSV) + '</strong></td></tr>';
+    } else {
+        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmt0(p.price) + '</td><td class="num">' + fmt0(r.grossGSV) + '</td></tr>';
+    }
+    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' 双</td><td class="num">' + fmt0(r.actualPrice) + '</td><td class="num loss">-' + fmt0(r.returnRefund) + '</td></tr>';
+    salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>净销售（有效订单）</strong></td><td class="num">' + fmtInt(r.validOrders) + ' 双</td><td class="num">—</td><td class="num profit">' + fmt0(r.netGSV) + '</td></tr>';
+    document.getElementById('salesBody').innerHTML = salesHtml;
+
+    // 成本明细表
+    var costHtml = '';
+    var totalCost = r.totalCost;
+    function costRow(name, amount) {
+        var pct = totalCost > 0 ? (amount / totalCost * 100).toFixed(1) + '%' : '—';
+        costHtml += '<tr><td>' + name + '</td><td class="num">' + fmt0(amount) + '</td><td class="num">' + pct + '</td></tr>';
+    }
+    costRow('产品成本', r.totalProductCost);
+    if (p.wmEnabled) {
+        costRow('无忧卖佣金', r.wmCommission);
+    } else {
+        costRow('平台佣金', r.platformFee);
+    }
+    costRow('发货运费', r.totalShipping);
+    costRow('退货运费', r.totalReturnShip);
+    costRow('广告预算', r.adBudget);
+    costHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>总成本</strong></td><td class="num"><strong>' + fmt0(r.totalCost) + '</strong></td><td class="num">100%</td></tr>';
+    costHtml += '<tr><td><strong>利润</strong></td><td class="num ' + (r.profit >= 0 ? 'profit' : 'loss') + '"><strong>' + sign(r.profit) + fmt0(r.profit) + '</strong></td><td class="num">' + (r.netGSV > 0 ? fmtPct(r.profitRate) : '—') + '</td></tr>';
+    document.getElementById('costBody').innerHTML = costHtml;
+}
+
+// ========== 每日数据 ==========
+function renderDaily() {
+    var userDaily = allDaily.filter(function(d) { return d.owner_email === detailEmail; });
+    var statsEl = document.getElementById('dailyStats');
+    var tableEl = document.getElementById('dailyTable');
+
+    if (userDaily.length === 0) {
+        statsEl.innerHTML = '';
+        tableEl.innerHTML = '<div class="empty">该用户暂无每日数据</div>';
+        return;
+    }
+
+    var tSpend = 0, tImp = 0, tClicks = 0, tConsult = 0, tOrders = 0, tReturns = 0;
+    userDaily.forEach(function(d) {
+        tSpend += Number(d.spend || 0); tImp += Number(d.impressions || 0);
+        tClicks += Number(d.clicks || 0); tConsult += Number(d.consult || 0);
+        tOrders += Number(d.orders || 0); tReturns += Number(d.returns || 0);
+    });
+
+    statsEl.innerHTML =
+        '<span class="stat"><span class="num">' + userDaily.length + '</span> 条记录</span>' +
+        '<span class="stat">总花费 <span class="num">¥' + fmt0(tSpend) + '</span></span>' +
+        '<span class="stat">总曝光 <span class="num">' + fmtInt(tImp) + '</span></span>' +
+        '<span class="stat">总点击 <span class="num">' + fmtInt(tClicks) + '</span></span>' +
+        '<span class="stat">总成交 <span class="num">' + fmtInt(tOrders) + '</span> 单</span>';
+
+    var html = '<table><thead><tr><th>日期</th><th>项目</th><th>花费</th><th>曝光</th><th>点击</th><th>咨询</th><th>成交</th><th>退货</th><th>CTR</th><th>CPC</th></tr></thead><tbody>';
+    userDaily.forEach(function(d) {
+        var ctr = d.impressions > 0 ? (d.clicks / d.impressions * 100).toFixed(2) + '%' : '—';
+        var cpc = d.clicks > 0 ? '¥' + (d.spend / d.clicks).toFixed(2) : '—';
+        html += '<tr><td>' + fmtDateOnly(d.data_date) + '</td>' +
+            '<td>' + (d.project_name || '-') + '</td>' +
+            '<td class="num">¥' + fmt0(d.spend) + '</td>' +
+            '<td class="num">' + fmtInt(d.impressions) + '</td>' +
+            '<td class="num">' + fmtInt(d.clicks) + '</td>' +
+            '<td class="num">' + fmtInt(d.consult) + '</td>' +
+            '<td class="num">' + fmtInt(d.orders) + '</td>' +
+            '<td class="num">' + fmtInt(d.returns) + '</td>' +
+            '<td class="num">' + ctr + '</td>' +
+            '<td class="num">' + cpc + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    tableEl.innerHTML = html;
+}
+
+// ========== 返回用户列表 ==========
+function backToUsers() {
+    document.getElementById('viewDetail').classList.add('hidden');
+    document.getElementById('viewUsers').classList.remove('hidden');
+}
+</script>
+
+<!-- 版本管理 -->
+<div style="max-width:1100px;margin:16px auto 0;padding:12px 20px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:#8c8c8c;">
+    <span>闲鱼决策系统 · 管理后台</span>
+    <span style="color:#595959;font-weight:500;">版本 <span id="appVersion">v2.2.0</span></span>
+    <span>构建于 <span id="buildTime">2026-07-19 17:26</span></span>
+    <button onclick="checkUpdate()" style="padding:3px 10px;border:1px solid #d9d9d9;border-radius:4px;background:#fff;font-size:12px;cursor:pointer;color:#595959;">检查更新</button>
+    <span id="versionStatus"></span>
+</div>
+<script>
+var APP_VERSION = 'v2.3.0';
+var BUILD_TIME = '2026-07-21 14:30';
+function checkUpdate() {
+    var el = document.getElementById('versionStatus');
+    el.textContent = '检查中...';
+    el.style.color = '#1677ff';
+    fetch('version.json?t=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.version !== APP_VERSION) {
+                el.innerHTML = '发现新版本 ' + data.version + '（' + (data.buildTime || '') + '），当前页面为缓存旧版，<a href="javascript:location.reload(true)" style="color:#d4380d;text-decoration:underline;cursor:pointer;">点此强制刷新</a>';
+                el.style.color = '#d4380d';
+            } else {
+                el.textContent = '已是最新版本';
+                el.style.color = '#52c41a';
+            }
+        })
+        .catch(function(e) {
+            el.textContent = '无法检查更新';
+            el.style.color = '#bfbfbf';
+        });
+}
+setTimeout(function() { checkUpdate(); }, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>广告代理公司利润模型 · 闲鱼商业决策系统</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #f5f5f5; --card: #fff; --border: #d9d9d9; --text: #262626;
+  --text2: #8c8c8c; --primary: #1890ff; --primary-bg: #e6f7ff;
+  --profit: #52c41a; --loss: #ff4d4f; --warn: #faad14;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 960px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 22px; margin-bottom: 4px; }
+.subtitle { color: var(--text2); font-size: 14px; margin-bottom: 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.card h2 { font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+.summary-card .label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.summary-card .value { font-size: 22px; font-weight: 700; }
+.summary-card .value.profit { color: var(--profit); }
+.summary-card .value.loss { color: var(--loss); }
+.summary-card .value.neutral { color: var(--primary); }
+.summary-card .sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.form-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.form-row label { min-width: 120px; font-size: 14px; color: var(--text2); }
+.form-row input, .form-row select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; width: 120px; }
+.form-row input[type="text"] { width: 200px; }
+.form-row .hint { font-size: 12px; color: var(--text2); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+th { background: #fafafa; font-weight: 600; color: var(--text2); font-size: 12px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.profit { color: var(--profit); }
+.loss { color: var(--loss); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.tag-green { background: #f6ffed; color: var(--profit); border: 1px solid #b7eb8f; }
+.tag-red { background: #fff2f0; color: var(--loss); border: 1px solid #ffccc7; }
+.tag-blue { background: var(--primary-bg); color: var(--primary); border: 1px solid #91d5ff; }
+.btn { display: inline-block; padding: 6px 16px; border: 1px solid var(--primary); border-radius: 4px; background: var(--primary); color: #fff; font-size: 14px; cursor: pointer; text-decoration: none; }
+.btn:hover { opacity: .85; }
+.btn-outline { background: transparent; color: var(--primary); }
+.btn-sm { padding: 3px 10px; font-size: 12px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.mt8 { margin-top: 8px; } .mt16 { margin-top: 16px; } .mb8 { margin-bottom: 8px; }
+.note { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; padding: 10px 14px; font-size: 13px; color: #614700; margin-top: 8px; }
+.toggle-row { display: flex; align-items: center; gap: 6px; }
+.toggle-row input[type="checkbox"] { width: 16px; height: 16px; }
+.customer-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.customer-row:last-child { border-bottom: none; }
+.customer-row .c-name { flex: 1; font-weight: 500; }
+.customer-row .c-budget { width: 120px; text-align: right; font-variant-numeric: tabular-nums; }
+.customer-row .c-rebate { width: 100px; text-align: right; font-variant-numeric: tabular-nums; color: var(--profit); }
+.customer-row .c-source { font-size: 11px; color: var(--text2); }
+.tier-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tier-row input { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.tier-row .tier-min { width: 100px; } .tier-row .tier-rate { width: 80px; }
+.tier-row .tier-label { font-size: 12px; color: var(--text2); min-width: 100px; }
+.tier-row .btn-sm { margin-left: 4px; }
+.login-box { text-align: center; padding: 40px 20px; }
+.login-box input { margin-bottom: 10px; }
+.sync-bar { font-size: 12px; color: var(--text2); }
+.link-back { font-size: 13px; color: var(--primary); text-decoration: none; }
+.version-bar { text-align: center; font-size: 12px; color: var(--text2); padding: 8px; border-top: 1px solid var(--border); margin-top: 16px; }
+.update-hint { display: none; background: #fff7e6; border: 1px solid #ffd591; border-radius: 4px; padding: 6px 14px; font-size: 12px; color: #d46b08; margin-top: 6px; text-align: center; }
+@media(max-width:640px){ .form-row label{ min-width: 90px; } .form-row input{ width: 100px; } table{ font-size: 12px; } th,td{ padding: 6px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="flex-between mb8">
+    <div>
+      <h1>广告代理公司利润模型</h1>
+      <div class="subtitle">闲鱼商业决策系统 · 代理利润分支 | 投放预算与主模型联动</div>
+    </div>
+    <div>
+      <a class="link-back" href="https://30451e480cf6446b8bd5008f2562b852.app.codebuddy.work" target="_blank">← 返回主模型 V3</a>
+    </div>
+  </div>
+
+  <!-- 登录区 -->
+  <div class="card" id="loginCard">
+    <div class="login-box">
+      <h2 style="border:none; padding:0;">登录 / 注册</h2>
+      <p style="color:var(--text2); font-size:13px; margin: 8px 0 16px;">登录后自动同步主模型项目数据（广告预算联动）</p>
+      <div class="form-row" style="justify-content:center;">
+        <input type="email" id="loginEmail" placeholder="邮箱" style="width:220px;">
+      </div>
+      <div class="form-row" style="justify-content:center;">
+        <input type="password" id="loginPassword" placeholder="密码" style="width:220px;">
+      </div>
+      <div id="loginMsg" style="color:var(--loss); font-size:13px; margin-bottom:8px;"></div>
+      <button class="btn" onclick="doLogin()">登录</button>
+      <button class="btn btn-outline" onclick="doRegister()">注册</button>
+      <p style="color:var(--text2); font-size:12px; margin-top:12px;">未注册邮箱可直接注册，与主模型共用同一账号</p>
+    </div>
+  </div>
+
+  <!-- 主面板（登录后显示） -->
+  <div id="mainPanel" style="display:none;">
+
+    <!-- 同步状态 -->
+    <div class="flex-between mb8">
+      <div class="sync-bar" id="syncBar">未同步</div>
+      <button class="btn btn-outline btn-sm" onclick="syncFromCloud()">刷新数据</button>
+    </div>
+
+    <!-- 核心摘要 -->
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="label">月投放总额</div>
+        <div class="value neutral" id="s-totalSpend">—</div>
+        <div class="sub" id="s-customerCount">0 个客户</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">返点收入</div>
+        <div class="value profit" id="s-rebateIncome">—</div>
+        <div class="sub" id="s-avgRebateRate">平均返点 —</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">服务费收入</div>
+        <div class="value neutral" id="s-serviceFee">—</div>
+        <div class="sub" id="s-feeMode">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">运营成本</div>
+        <div class="value loss" id="s-totalCost">—</div>
+        <div class="sub" id="s-costDetail">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">代理净利润</div>
+        <div class="value" id="s-netProfit">—</div>
+        <div class="sub" id="s-profitMargin">利润率 —</div>
+      </div>
+    </div>
+
+    <!-- 客户投放预算来源 -->
+    <div class="card">
+      <h2>客户投放预算（与主模型联动）</h2>
+      <div class="note">
+        每个经营项目 = 一个客户。广告预算自动从主模型同步（毛GSV ÷ GSV成本比）。可手动添加外部客户。
+      </div>
+      <div id="customerList" style="margin-top:12px;"></div>
+      <div class="mt8">
+        <button class="btn btn-outline btn-sm" onclick="addManualCustomer()">+ 添加外部客户</button>
+      </div>
+      <div class="form-row mt16" style="border-top:1px solid var(--border); padding-top:12px;">
+        <label>月投放周期</label>
+        <select id="cycleMonths" onchange="render()">
+          <option value="1">1个月（单项目周期）</option>
+          <option value="3" selected>3个月（季度）</option>
+          <option value="6">6个月（半年）</option>
+          <option value="12">12个月（全年）</option>
+        </select>
+        <span class="hint">投放总额 = 各客户月预算 × 月数</span>
+      </div>
+    </div>
+
+    <!-- 返点规则 -->
+    <div class="card">
+      <h2>返点规则配置</h2>
+      <div class="note">
+        广告平台按月消耗量给代理公司返点，消耗越高返点比例越高。点击「计算」后自动按每个客户的月投放额匹配档位。
+      </div>
+      <div id="tierList" style="margin-top:12px;"></div>
+      <button class="btn btn-outline btn-sm mt8" onclick="addTier()">+ 添加档位</button>
+      <div class="form-row mt16">
+        <label>返点计算方式</label>
+        <select id="rebateMode" onchange="render()">
+          <option value="tier">按档位（阶梯返点）</option>
+          <option value="flat">统一返点率</option>
+        </select>
+      </div>
+      <div class="form-row" id="flatRateRow" style="display:none;">
+        <label>统一返点率</label>
+        <input type="number" id="flatRebateRate" value="5" step="0.5" onchange="render()"> %
+        <span class="hint">所有客户统一返点比例</span>
+      </div>
+    </div>
+
+    <!-- 服务费 -->
+    <div class="card">
+      <h2>服务费 / 代运营费</h2>
+      <div class="form-row">
+        <label>收费模式</label>
+        <select id="feeMode" onchange="render()">
+          <option value="none">无服务费（纯返点）</option>
+          <option value="fixed" selected>固定月费/客户</option>
+          <option value="pct">按投放额百分比</option>
+        </select>
+      </div>
+      <div class="form-row" id="feeFixedRow">
+        <label>固定月费/客户</label>
+        <input type="number" id="feeFixed" value="2000" step="500" onchange="render()"> 元
+      </div>
+      <div class="form-row" id="feePctRow" style="display:none;">
+        <label>投放额百分比</label>
+        <input type="number" id="feePct" value="3" step="0.5" onchange="render()"> %
+      </div>
+    </div>
+
+    <!-- 运营成本 -->
+    <div class="card">
+      <h2>运营成本</h2>
+      <div class="form-row">
+        <label>优化师人数</label>
+        <input type="number" id="opStaffCount" value="2" min="0" onchange="render()"> 人
+        <label style="min-width:80px;">月薪/人</label>
+        <input type="number" id="opStaffSalary" value="8000" step="1000" onchange="render()"> 元
+      </div>
+      <div class="form-row">
+        <label>素材制作/月</label>
+        <input type="number" id="opCreative" value="3000" step="500" onchange="render()"> 元
+      </div>
+      <div class="form-row">
+        <label>工具/系统/月</label>
+        <input type="number" id="opTools" value="800" step="100" onchange="render()"> 元
+      </div>
+      <div class="form-row">
+        <label>办公/其他/月</label>
+        <input type="number" id="opOffice" value="2000" step="500" onchange="render()"> 元
+      </div>
+      <div class="note" style="margin-top:8px;">
+        运营总成本 = (优化师人数 × 月薪 + 素材 + 工具 + 办公) × 月数
+      </div>
+    </div>
+
+    <!-- 利润明细表 -->
+    <div class="card">
+      <h2>利润明细</h2>
+      <table>
+        <thead>
+          <tr><th>项目</th><th>计算说明</th><th class="num">金额</th></tr>
+        </thead>
+        <tbody id="profitDetailBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 客户利润明细表 -->
+    <div class="card">
+      <h2>客户利润明细</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>客户/项目</th>
+            <th>月投放额</th>
+            <th>返点率</th>
+            <th class="num">返点收入</th>
+            <th class="num">服务费</th>
+            <th class="num">贡献利润</th>
+          </tr>
+        </thead>
+        <tbody id="customerProfitBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 敏感性分析 -->
+    <div class="card">
+      <h2>敏感性分析 · 不同月投放规模</h2>
+      <p style="font-size:13px; color:var(--text2); margin-bottom:8px;">
+        假设返点档位和成本不变，月投放总额从当前水平 ±50% 时的利润变化。
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>月投放总额</th>
+            <th>返点收入</th>
+            <th>服务费</th>
+            <th>运营成本</th>
+            <th class="num">净利润</th>
+            <th>利润率</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="sensitivityBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 测算说明 -->
+    <div class="card">
+      <h2>测算说明</h2>
+      <ul style="font-size:13px; color:var(--text2); line-height:2; padding-left:20px;">
+        <li><strong>投放预算联动</strong>：每个客户的月投放额 = 主模型项目的广告预算（毛GSV ÷ GSV成本比）。修改主模型参数后刷新即可同步。</li>
+        <li><strong>返点</strong>：广告平台按月消耗量分档返点。消耗越高返点越高。也支持统一返点率模式。</li>
+        <li><strong>服务费</strong>：除返点外，代理可向客户收固定月费或按投放额百分比收费。</li>
+        <li><strong>运营成本</strong>：人员薪资 + 素材制作 + 工具 + 办公，按月计算再乘以周期月数。</li>
+        <li><strong>净利润</strong> = 返点收入 + 服务费 − 运营成本。</li>
+        <li><strong>利润率</strong> = 净利润 ÷ 投放总额（反映每经手1元投放赚多少）。</li>
+      </ul>
+    </div>
+
+    <div class="version-bar" id="versionBar">
+      <span id="versionText">—</span>
+      <div class="update-hint" id="updateHint"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 版本管理 =====
+var APP_VERSION = 'v1.0.0';
+var BUILD_TIME = '2026-07-22 16:00';
+
+function checkUpdate() {
+    fetch('version.json?t=' + Date.now())
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if (data.version && data.version !== APP_VERSION) {
+                var hint = document.getElementById('updateHint');
+                hint.style.display = 'block';
+                hint.textContent = '发现新版本 ' + data.version + '（当前 ' + APP_VERSION + '），请强制刷新浏览器（Cmd/Ctrl+Shift+R）';
+            }
+        })
+        .catch(function(){});
+}
+
+// ===== Supabase 配置（与主模型共用） =====
+var SB_URL = 'https://rrlngimtenxilfomxgju.supabase.co';
+var SB_KEY = 'sb_publishable_CcU32V_oh1k01fKq-pbBTw_HxSrn1sv';
+var sb = null, sbUser = null;
+
+// URL 参数联动（从主模型跳转时带 ?budget=49500）
+var urlParams = new URLSearchParams(window.location.search);
+var urlBudget = parseFloat(urlParams.get('budget')) || 0;
+var urlProjectName = urlParams.get('project') || '';
+
+// ===== 数据模型 =====
+var projects = [];       // 从 Supabase 读取的项目
+var manualCustomers = []; // 手动添加的外部客户
+var rebateTiers = [
+    { min: 0,     rate: 0   },
+    { min: 10000, rate: 3   },
+    { min: 30000, rate: 5   },
+    { min: 100000, rate: 7  },
+    { min: 300000, rate: 8  }
+];
+
+// ===== 工具函数 =====
+function fmt(n) { return '\u00a5' + Math.round(n).toLocaleString('zh-CN'); }
+function fmt0(n) { return Math.round(n).toString(); }
+function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+function val(id) { var el = document.getElementById(id); return el ? parseFloat(el.value) || 0 : 0; }
+
+// ===== Supabase 登录 =====
+function initSB() {
+    if (typeof supabase === 'undefined') { return false; }
+    sb = supabase.createClient(SB_URL, SB_KEY);
+    return true;
+}
+
+async function doLogin() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var pwd = document.getElementById('loginPassword').value;
+    if (!email || !pwd) { document.getElementById('loginMsg').textContent = '请输入邮箱和密码'; return; }
+    if (!sb) initSB();
+    var res = await sb.auth.signInWithPassword({ email: email, password: pwd });
+    if (res.error) { document.getElementById('loginMsg').textContent = '登录失败: ' + res.error.message; return; }
+    onAuth(res.data.user);
+}
+
+async function doRegister() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var pwd = document.getElementById('loginPassword').value;
+    if (!email || !pwd) { document.getElementById('loginMsg').textContent = '请输入邮箱和密码'; return; }
+    if (!sb) initSB();
+    var res = await sb.auth.signUp({ email: email, password: pwd });
+    if (res.error) { document.getElementById('loginMsg').textContent = '注册失败: ' + res.error.message; return; }
+    if (res.data.user) { document.getElementById('loginMsg').textContent = '注册成功，请点击登录'; }
+}
+
+function onAuth(user) {
+    sbUser = user;
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('mainPanel').style.display = 'block';
+    document.getElementById('versionText').textContent = APP_VERSION + ' · ' + BUILD_TIME;
+    checkUpdate();
+    syncFromCloud();
+}
+
+// ===== 从 Supabase 同步项目数据 =====
+async function syncFromCloud() {
+    var bar = document.getElementById('syncBar');
+    bar.textContent = '同步中...';
+    if (!sb) initSB();
+    try {
+        var res = await sb.from('projects').select('*').order('updated_at', { ascending: false });
+        if (res.error) { bar.textContent = '同步失败: ' + res.error.message; return; }
+        projects = res.data || [];
+        // 如果 URL 带了 budget 参数，且没有项目数据，自动创建一个临时客户
+        if (projects.length === 0 && urlBudget > 0) {
+            manualCustomers.push({
+                name: urlProjectName || '主模型项目',
+                monthlyBudget: urlBudget,
+                source: 'url'
+            });
+        }
+        bar.textContent = '已同步 ' + new Date().toLocaleTimeString('zh-CN') + ' · ' + projects.length + ' 个项目';
+        renderTiers();
+        render();
+    } catch(e) {
+        bar.textContent = '同步出错: ' + e.message;
+    }
+}
+
+// ===== 计算每个项目的月广告预算 =====
+function calcProjectBudget(p) {
+    // 与主模型一致：adBudget = grossGSV / ratio = (quantity * price) / ratio
+    var grossGSV = p.quantity * p.price;
+    return grossGSV / p.ratio;
+}
+
+// ===== 获取所有客户（项目 + 手动） =====
+function getAllCustomers() {
+    var list = [];
+    projects.forEach(function(p) {
+        list.push({
+            name: p.name,
+            monthlyBudget: calcProjectBudget(p),
+            source: 'cloud',
+            industry: p.industry
+        });
+    });
+    manualCustomers.forEach(function(c) {
+        list.push({
+            name: c.name,
+            monthlyBudget: c.monthlyBudget,
+            source: c.source || 'manual',
+            industry: ''
+        });
+    });
+    return list;
+}
+
+// ===== 返点计算 =====
+function getRebateRate(monthlyBudget) {
+    var mode = document.getElementById('rebateMode').value;
+    if (mode === 'flat') {
+        return val('flatRebateRate') / 100;
+    }
+    // 阶梯返点：找到最高满足 min 的档位
+    var rate = 0;
+    rebateTiers.forEach(function(t) {
+        if (monthlyBudget >= t.min) rate = t.rate;
+    });
+    return rate / 100;
+}
+
+// ===== 服务费计算 =====
+function calcServiceFee(monthlyBudget) {
+    var mode = document.getElementById('feeMode').value;
+    if (mode === 'none') return 0;
+    if (mode === 'fixed') return val('feeFixed');
+    if (mode === 'pct') return monthlyBudget * val('feePct') / 100;
+    return 0;
+}
+
+// ===== 运营成本 =====
+function calcMonthlyCost() {
+    return val('opStaffCount') * val('opStaffSalary') + val('opCreative') + val('opTools') + val('opOffice');
+}
+
+// ===== 核心计算 =====
+function calc() {
+    var months = parseInt(document.getElementById('cycleMonths').value) || 1;
+    var customers = getAllCustomers();
+    var totalSpend = 0, totalRebate = 0, totalFee = 0;
+    var customerDetails = [];
+
+    customers.forEach(function(c) {
+        var rebateRate = getRebateRate(c.monthlyBudget);
+        var rebate = c.monthlyBudget * rebateRate * months;
+        var fee = calcServiceFee(c.monthlyBudget) * months;
+        totalSpend += c.monthlyBudget * months;
+        totalRebate += rebate;
+        totalFee += fee;
+        customerDetails.push({
+            name: c.name,
+            monthlyBudget: c.monthlyBudget,
+            rebateRate: rebateRate,
+            rebate: rebate,
+            fee: fee,
+            contribution: rebate + fee,
+            source: c.source
+        });
+    });
+
+    var monthlyCost = calcMonthlyCost();
+    var totalCost = monthlyCost * months;
+    var netProfit = totalRebate + totalFee - totalCost;
+    var profitMargin = totalSpend > 0 ? netProfit / totalSpend : 0;
+    var avgRebateRate = totalSpend > 0 ? totalRebate / totalSpend : 0;
+
+    return {
+        months: months,
+        customers: customers,
+        customerDetails: customerDetails,
+        totalSpend: totalSpend,
+        totalRebate: totalRebate,
+        totalFee: totalFee,
+        totalCost: totalCost,
+        monthlyCost: monthlyCost,
+        netProfit: netProfit,
+        profitMargin: profitMargin,
+        avgRebateRate: avgRebateRate
+    };
+}
+
+// ===== 渲染 =====
+function render() {
+    var r = calc();
+
+    // 摘要卡片
+    document.getElementById('s-totalSpend').textContent = fmt(r.totalSpend);
+    document.getElementById('s-customerCount').textContent = r.customers.length + ' 个客户';
+    document.getElementById('s-rebateIncome').textContent = fmt(r.totalRebate);
+    document.getElementById('s-avgRebateRate').textContent = '平均返点 ' + fmtPct(r.avgRebateRate);
+    document.getElementById('s-serviceFee').textContent = fmt(r.totalFee);
+    var feeMode = document.getElementById('feeMode').value;
+    var feeModeText = feeMode === 'none' ? '无服务费' : (feeMode === 'fixed' ? '固定月费' : '按投放额%');
+    document.getElementById('s-feeMode').textContent = feeModeText;
+    document.getElementById('s-totalCost').textContent = fmt(r.totalCost);
+    document.getElementById('s-costDetail').textContent = '\u00a5' + Math.round(r.monthlyCost).toLocaleString('zh-CN') + '/月 \u00d7 ' + r.months + '月';
+
+    var profitEl = document.getElementById('s-netProfit');
+    profitEl.textContent = (r.netProfit >= 0 ? '+' : '') + fmt(Math.abs(r.netProfit)).replace('\u00a5', '\u00a5');
+    profitEl.className = 'value ' + (r.netProfit >= 0 ? 'profit' : 'loss');
+    document.getElementById('s-profitMargin').textContent = '利润率 ' + fmtPct(r.profitMargin);
+
+    // 服务费模式切换
+    document.getElementById('feeFixedRow').style.display = feeMode === 'fixed' ? 'flex' : 'none';
+    document.getElementById('feePctRow').style.display = feeMode === 'pct' ? 'flex' : 'none';
+
+    // 返点模式切换
+    var flatRow = document.getElementById('flatRateRow');
+    flatRow.style.display = document.getElementById('rebateMode').value === 'flat' ? 'flex' : 'none';
+
+    // 客户列表
+    renderCustomers(r);
+
+    // 利润明细
+    var rows = [
+        ['返点收入', '各客户月投放 \u00d7 返点率 \u00d7 ' + r.months + '月', r.totalRebate, 'profit'],
+        ['服务费收入', feeModeText, r.totalFee, 'profit'],
+        ['运营成本', '\u00a5' + Math.round(r.monthlyCost).toLocaleString('zh-CN') + '/月 \u00d7 ' + r.months + '月', -r.totalCost, 'loss'],
+        ['净利润', '返点 + 服务费 \u2212 成本', r.netProfit, r.netProfit >= 0 ? 'profit' : 'loss']
+    ];
+    var html = '';
+    rows.forEach(function(row) {
+        var v = row[2];
+        var sign = v < 0 ? '\u2212' : (row[0] === '净利润' && v >= 0 ? '+' : '');
+        html += '<tr><td><strong>' + row[0] + '</strong></td><td style="color:var(--text2); font-size:12px;">' + row[1] + '</td><td class="num ' + row[3] + '">' + sign + fmt(Math.abs(v)) + '</td></tr>';
+    });
+    document.getElementById('profitDetailBody').innerHTML = html;
+
+    // 客户利润明细
+    var cHtml = '';
+    if (r.customerDetails.length === 0) {
+        cHtml = '<tr><td colspan="6" style="text-align:center; color:var(--text2);">暂无客户数据，请从主模型同步或手动添加</td></tr>';
+    } else {
+        r.customerDetails.forEach(function(c) {
+            var srcTag = c.source === 'cloud' ? '<span class="tag tag-blue">云端同步</span>' : '<span class="tag tag-green">手动</span>';
+            cHtml += '<tr><td>' + c.name + ' ' + srcTag + '</td><td class="num">' + fmt(c.monthlyBudget) + '</td><td class="num">' + fmtPct(c.rebateRate) + '</td><td class="num profit">' + fmt(c.rebate) + '</td><td class="num">' + fmt(c.fee) + '</td><td class="num profit"><strong>' + fmt(c.contribution) + '</strong></td></tr>';
+        });
+    }
+    document.getElementById('customerProfitBody').innerHTML = cHtml;
+
+    // 敏感性分析
+    renderSensitivity(r);
+}
+
+function renderCustomers(r) {
+    var html = '';
+    if (r.customers.length === 0) {
+        html = '<p style="color:var(--text2); text-align:center; padding:20px;">暂无客户。请先在主模型创建项目，或点击下方按钮手动添加外部客户。</p>';
+    } else {
+        r.customers.forEach(function(c, i) {
+            var src = c.source === 'cloud' ? '<span class="c-source">云端同步</span>' : '<span class="c-source">手动添加</span>';
+            var delBtn = c.source !== 'cloud' ? '<button class="btn btn-outline btn-sm" onclick="removeManualCustomer(' + i + ')">删除</button>' : '';
+            html += '<div class="customer-row"><span class="c-name">' + c.name + ' ' + src + '</span>' + delBtn + '<span class="c-budget">' + fmt(c.monthlyBudget) + '/月</span></div>';
+        });
+    }
+    document.getElementById('customerList').innerHTML = html;
+}
+
+function renderSensitivity(r) {
+    if (r.totalSpend === 0) {
+        document.getElementById('sensitivityBody').innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text2);">暂无数据</td></tr>';
+        return;
+    }
+    var baseMonthly = r.totalSpend / r.months;
+    var factors = [0.5, 0.7, 0.85, 1, 1.15, 1.3, 1.5];
+    var html = '';
+    factors.forEach(function(f) {
+        var monthlySpend = baseMonthly * f;
+        var rebateRate = getRebateRate(monthlySpend);
+        var months = r.months;
+        var totalSpend = monthlySpend * months;
+        var rebate = totalSpend * rebateRate;
+        var fee = 0;
+        var feeMode = document.getElementById('feeMode').value;
+        if (feeMode === 'fixed') fee = val('feeFixed') * r.customers.length * months;
+        else if (feeMode === 'pct') fee = totalSpend * val('feePct') / 100;
+        var cost = r.monthlyCost * months;
+        var profit = rebate + fee - cost;
+        var margin = totalSpend > 0 ? profit / totalSpend : 0;
+        var isCurrent = Math.abs(f - 1) < 0.01;
+        var statusTag = profit > 0 ? '<span class="tag tag-green">盈利</span>' : '<span class="tag tag-red">亏损</span>';
+        var rowStyle = isCurrent ? ' style="background:#fffbe6;"' : '';
+        html += '<tr' + rowStyle + '><td class="num">' + fmt(monthlySpend) + '/月' + (isCurrent ? ' \u2190 当前' : '') + '</td><td class="num profit">' + fmt(rebate) + '</td><td class="num">' + fmt(fee) + '</td><td class="num loss">' + fmt(cost) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '"><strong>' + (profit >= 0 ? '+' : '\u2212') + fmt(Math.abs(profit)) + '</strong></td><td class="num">' + fmtPct(margin) + '</td><td>' + statusTag + '</td></tr>';
+    });
+    document.getElementById('sensitivityBody').innerHTML = html;
+}
+
+// ===== 返点档位管理 =====
+function renderTiers() {
+    var html = '';
+    rebateTiers.forEach(function(t, i) {
+        var label = i === 0 ? '0 ~ ' + (rebateTiers[1] ? fmt0(rebateTiers[1].min) : '?') + ' 元' :
+                    i < rebateTiers.length - 1 ? fmt0(t.min) + ' ~ ' + fmt0(rebateTiers[i+1].min) + ' 元' :
+                    fmt0(t.min) + ' 元以上';
+        html += '<div class="tier-row"><span class="tier-label">' + label + '</span><input type="number" class="tier-min" value="' + t.min + '" onchange="updateTier(' + i + ', \'min\', this.value)"> <input type="number" class="tier-rate" value="' + t.rate + '" step="0.5" onchange="updateTier(' + i + ', \'rate\', this.value)">% <button class="btn btn-outline btn-sm" onclick="removeTier(' + i + ')">删除</button></div>';
+    });
+    document.getElementById('tierList').innerHTML = html;
+}
+
+function updateTier(idx, field, value) {
+    rebateTiers[idx][field] = parseFloat(value) || 0;
+    renderTiers();
+    render();
+}
+
+function addTier() {
+    var last = rebateTiers[rebateTiers.length - 1];
+    rebateTiers.push({ min: (last ? last.min + 100000 : 100000), rate: (last ? last.rate + 1 : 5) });
+    renderTiers();
+    render();
+}
+
+function removeTier(idx) {
+    if (rebateTiers.length <= 1) return;
+    rebateTiers.splice(idx, 1);
+    renderTiers();
+    render();
+}
+
+// ===== 手动客户管理 =====
+function addManualCustomer() {
+    var name = prompt('客户名称', '外部客户');
+    if (!name) return;
+    var budget = parseFloat(prompt('月投放预算（元）', '50000')) || 50000;
+    manualCustomers.push({ name: name, monthlyBudget: budget, source: 'manual' });
+    render();
+}
+
+function removeManualCustomer(idx) {
+    // idx 是在 getAllCustomers 中的位置，需要映射到 manualCustomers
+    var customers = getAllCustomers();
+    var target = customers[idx];
+    if (target.source === 'cloud') return;
+    var mIdx = manualCustomers.findIndex(function(m) { return m.name === target.name && m.monthlyBudget === target.monthlyBudget; });
+    if (mIdx >= 0) manualCustomers.splice(mIdx, 1);
+    render();
+}
+
+// ===== 初始化 =====
+initSB();
+
+// 检查 Supabase 会话
+if (sb) {
+    sb.auth.getSession().then(function(res) {
+        if (res.data && res.data.session) {
+            onAuth(res.data.session.user);
+        }
+    });
+}
+
+// 如果 URL 带了 budget 但没登录，也显示一个预览
+if (urlBudget > 0) {
+    document.getElementById('loginMsg').innerHTML = '检测到主模型预算参数：' + urlProjectName + ' = ' + fmt(urlBudget) + '，登录后自动导入';
+}
+
+// 监听 Supabase auth 状态变化
+if (sb) {
+    sb.auth.onAuthStateChange(function(event, session) {
+        if (event === 'SIGNED_IN' && session) {
+            if (!sbUser) onAuth(session.user);
+        }
+    });
+}
+</script>
+</body>
+</html>

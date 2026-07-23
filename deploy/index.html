@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鞋类广告投放预算测算表（含无忧卖）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5; color: #1f1f1f; padding: 24px; line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* Header */
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 { font-size: 28px; margin-bottom: 6px; }
+        .header .subtitle { font-size: 14px; color: #8c8c8c; }
+        .header .tags { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .tag { background: #e6f4ff; color: #1677ff; padding: 4px 14px; border-radius: 16px; font-size: 13px; font-weight: 500; }
+        .tag.wm { background: #fff7e6; color: #fa8c16; }
+
+        /* Summary */
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .summary-card { background: #fff; border-radius: 10px; padding: 20px 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .summary-card .label { font-size: 13px; color: #8c8c8c; margin-bottom: 8px; }
+        .summary-card .value { font-size: 22px; font-weight: 700; }
+        .summary-card .value.profit { color: #52c41a; }
+        .summary-card .value.loss { color: #ff4d4f; }
+        .summary-card .value.neutral { color: #1677ff; }
+
+        /* Cards */
+        .card { background: #fff; border-radius: 10px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card h2 { font-size: 17px; border-left: 3px solid #1677ff; padding-left: 10px; margin-bottom: 16px; }
+        .card h2.wm-title { border-left-color: #fa8c16; }
+        .card h3 { font-size: 14px; color: #595959; margin: 20px 0 8px 0; }
+        .card h3:first-child { margin-top: 0; }
+
+        /* Inputs */
+        .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+        .input-group { display: flex; align-items: center; gap: 8px; }
+        .input-group label { font-size: 13px; color: #595959; min-width: 100px; text-align: right; white-space: nowrap; }
+        .input-wrapper { flex: 1; display: flex; align-items: center; border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; transition: border-color 0.2s; }
+        .input-wrapper:focus-within { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+        .input-wrapper .prefix, .input-wrapper .suffix { padding: 0 10px; color: #8c8c8c; font-size: 13px; background: #fafafa; height: 34px; display: flex; align-items: center; white-space: nowrap; }
+        .input-wrapper .prefix { border-right: 1px solid #d9d9d9; }
+        .input-wrapper .suffix { border-left: 1px solid #d9d9d9; }
+        .input-wrapper input { flex: 1; border: none; padding: 6px 10px; font-size: 14px; outline: none; width: 100%; min-width: 0; }
+
+        /* Toggle */
+        .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .toggle-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #fa8c16; }
+        .toggle-row label { font-size: 15px; font-weight: 600; cursor: pointer; }
+        .toggle-row .wm-badge { background: #fff7e6; color: #fa8c16; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+
+        .wm-section { background: #fffbf5; border: 1px dashed #ffd591; border-radius: 8px; padding: 16px; margin-top: 4px; }
+        .wm-section.disabled { opacity: 0.4; pointer-events: none; }
+
+        .note { background: #e6f4ff; border: 1px solid #91caff; border-radius: 6px; padding: 12px 16px; margin-top: 16px; font-size: 13px; color: #0050b3; line-height: 1.7; }
+        .note strong { color: #003a8c; }
+        .note.wm-note { background: #fff7e6; border-color: #ffd591; color: #ad6800; }
+        .note.wm-note strong { color: #874d00; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; font-weight: 600; color: #595959; font-size: 13px; }
+        td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "SF Mono", "Menlo", monospace; }
+        .profit { color: #52c41a; font-weight: 600; }
+        .loss { color: #ff4d4f; font-weight: 600; }
+        .highlight-row { background: #fffbe6 !important; }
+        .highlight-row td { font-weight: 600; }
+        .break-even-row { background: #f6ffed !important; }
+        .break-even-row td { font-weight: 600; color: #389e0d; }
+        .wm-row td { background: #fffbf5; }
+
+        /* Metrics */
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .metric { background: #fafafa; border-radius: 8px; padding: 16px; text-align: center; }
+        .metric .label { font-size: 12px; color: #8c8c8c; margin-bottom: 6px; }
+        .metric .value { font-size: 20px; font-weight: 700; color: #1f1f1f; }
+        .metric .value.highlight { color: #1677ff; }
+        .metric .value.warning { color: #fa8c16; }
+        .metric .sub { font-size: 11px; color: #bfbfbf; margin-top: 4px; }
+
+        ul { padding-left: 20px; font-size: 13px; color: #595959; line-height: 2; }
+        ul li { margin-bottom: 4px; }
+        .section-divider { height: 1px; background: #f0f0f0; margin: 16px 0; }
+
+        /* 闲鱼超级擦亮投放策略表格 */
+        .plan-table { font-size: 13px; margin-bottom: 16px; }
+        .plan-table th { text-align: center; white-space: nowrap; }
+        .plan-table td { vertical-align: top; line-height: 1.7; }
+        .plan-table .phase-col { font-weight: 600; text-align: center; vertical-align: middle; }
+        .plan-table .center { text-align: center; vertical-align: middle; }
+        .plan-table .nowrap { white-space: nowrap; }
+        .plan-tag { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+        .plan-tag.p1 { background: #e6f4ff; color: #1677ff; }
+        .plan-tag.p2 { background: #f6ffed; color: #52c41a; }
+        .plan-tag.p3 { background: #fff7e6; color: #fa8c16; }
+        .plan-tag.gray { background: #f5f5f5; color: #595959; }
+        .sub-table { font-size: 12px; margin-top: 8px; }
+        .sub-table th { background: #f5f5f5; font-size: 12px; }
+        .sub-table td { padding: 8px 12px; }
+        .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: #595959; }
+        .legend span { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .xy-section-title { font-size: 15px; font-weight: 600; margin: 20px 0 10px 0; padding-left: 8px; border-left: 3px solid #d9d9d9; }
+        .xy-phase-budget { font-size: 13px; color: #8c8c8c; font-weight: 500; }
+
+        @media (max-width: 768px) {
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .input-grid { grid-template-columns: 1fr; }
+            .strategy-grid { grid-template-columns: 1fr; }
+            body { padding: 12px; }
+            .plan-table { font-size: 12px; }
+            .plan-table th, .plan-table td { padding: 6px 8px; }
+        }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .card { box-shadow: none; border: 1px solid #d9d9d9; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>鞋类广告投放预算测算表</h1>
+        <p class="subtitle">初期冲量模型 — 修改参数后所有数据自动联动</p>
+        <div class="tags" id="headerTags">
+            <span class="tag" id="tagQuantity">备货 1000 双</span>
+            <span class="tag" id="tagReturn">退货率 15%</span>
+            <span class="tag" id="tagRatio">GSV:成本 = 1:2</span>
+            <span class="tag" id="tagDaily">日均 20 单</span>
+            <span class="tag wm" id="tagWM" style="display:none">无忧卖 已开启</span>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-grid">
+        <div class="summary-card"><div class="label">净 GSV</div><div class="value neutral" id="summaryNetGSV">—</div></div>
+        <div class="summary-card"><div class="label">广告预算</div><div class="value neutral" id="summaryAdBudget">—</div></div>
+        <div class="summary-card"><div class="label">总成本</div><div class="value" id="summaryTotalCost">—</div></div>
+        <div class="summary-card"><div class="label">净利润</div><div class="value" id="summaryProfit">—</div></div>
+    </div>
+
+    <!-- Parameters -->
+    <div class="card">
+        <h2>基础参数（可调整）</h2>
+        <div class="input-grid">
+            <div class="input-group"><label>备货量</label><div class="input-wrapper"><input type="number" id="quantity" value="1000" min="1" step="1"><span class="suffix">双</span></div></div>
+            <div class="input-group"><label>售价/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="price" value="99" min="1" step="1"></div></div>
+            <div class="input-group"><label>产品成本/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="productCost" value="35" min="0" step="1"></div></div>
+            <div class="input-group"><label>退货率</label><div class="input-wrapper"><input type="number" id="returnRate" value="15" min="0" max="100" step="1"><span class="suffix">%</span></div></div>
+            <div class="input-group"><label>GSV:成本比</label><div class="input-wrapper"><span class="prefix">1:</span><input type="number" id="ratio" value="2" min="1" step="0.1"></div></div>
+            <div class="input-group"><label>平台佣金</label><div class="input-wrapper"><input type="number" id="platformFee" value="1.6" min="0" max="100" step="0.5"><span class="suffix">%</span></div></div>
+            <div class="input-group"><label>发货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="shipping" value="5" min="0" step="0.5"></div></div>
+            <div class="input-group"><label>退货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="returnShipping" value="3" min="0" step="0.5"></div></div>
+            <div class="input-group"><label>日均出单</label><div class="input-wrapper"><input type="number" id="dailyOrders" value="20" min="1" step="1"><span class="suffix">单/天</span></div></div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- 无忧卖 toggle -->
+        <div class="toggle-row">
+            <input type="checkbox" id="wuyoumai">
+            <label for="wuyoumai">参与无忧卖</label>
+            <span class="wm-badge">降价参与 · 替代佣金</span>
+        </div>
+        <div class="wm-section disabled" id="wmSection">
+            <div class="input-grid">
+                <div class="input-group"><label>降价金额/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="priceReduction" value="5" min="0" step="1"></div></div>
+                <div class="input-group"><label>无忧卖佣金率</label><div class="input-wrapper"><input type="number" id="wmComm" value="6" min="0" max="100" step="0.5"><span class="suffix">%</span></div></div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>「GSV成本 1:2」说明：</strong>每投入 1 元广告费产生 2 元 GSV（ROAS = 2），广告预算 = 毛GSV ÷ 2。冲量期常见策略，初期可能亏损，核心是跑通转化模型后逐步优化 ROAS。
+        </div>
+        <div class="note wm-note" id="wmNote" style="display:none;">
+            <strong>「无忧卖」说明：</strong>参与后实际售价 = 原价 − 降价金额，GSV 按降价后重新计算。佣金 <strong>互斥</strong>：参与无忧卖时 <strong>只收无忧卖佣金</strong>（不收平台佣金）；不参与时只收平台佣金。
+        </div>
+    </div>
+
+    <!-- Sales Detail -->
+    <div class="card">
+        <h2>销售测算</h2>
+        <table>
+            <thead><tr><th>项目</th><th>数量</th><th>单价</th><th>金额</th></tr></thead>
+            <tbody id="salesBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Cost Detail -->
+    <div class="card">
+        <h2>成本明细与盈亏</h2>
+        <table>
+            <thead><tr><th>成本项目</th><th>计算说明</th><th>金额</th><th>占净GSV</th></tr></thead>
+            <tbody id="costBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 无忧卖对比 -->
+    <div class="card" id="wmCompareCard" style="display:none;">
+        <h2 class="wm-title">无忧卖影响对比分析</h2>
+        <table>
+            <thead><tr><th>对比项目</th><th>不参与无忧卖</th><th>参与无忧卖</th><th>差异</th></tr></thead>
+            <tbody id="wmCompareBody"></tbody>
+        </table>
+        <div class="note wm-note" style="margin-top:12px;" id="wmVerdict"></div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="card">
+        <h2>关键指标</h2>
+        <div class="metrics-grid">
+            <div class="metric"><div class="label">ROAS（广告回报率）</div><div class="value highlight" id="m-roas">—</div><div class="sub">毛GSV ÷ 广告费</div></div>
+            <div class="metric"><div class="label">CPA（单次获客成本）</div><div class="value" id="m-cpa">—</div><div class="sub">广告费 ÷ 有效订单</div></div>
+            <div class="metric"><div class="label">单双广告成本</div><div class="value" id="m-adpair">—</div><div class="sub">广告费 ÷ 备货量</div></div>
+            <div class="metric"><div class="label">毛利率（扣产品成本）</div><div class="value" id="m-margin">—</div><div class="sub">(净GSV-产品成本) ÷ 净GSV</div></div>
+            <div class="metric"><div class="label">盈亏平衡 ROAS</div><div class="value warning" id="m-breakeven">—</div><div class="sub">达到此值不赚不亏</div></div>
+            <div class="metric"><div class="label">所需启动资金</div><div class="value" id="m-capital">—</div><div class="sub">产品成本 + 广告预算</div></div>
+        </div>
+    </div>
+
+    <!-- ROAS Break-Even -->
+    <div class="card">
+        <h2>盈亏平衡分析（不同 ROAS 下的利润表现）</h2>
+        <table>
+            <thead><tr><th>ROAS</th><th>销售收入</th><th>销售净收入</th><th>广告花费</th><th>总成本</th><th>净利润</th><th>利润率</th><th>状态</th></tr></thead>
+            <tbody id="roasBody"></tbody>
+        </table>
+        <div class="note" style="margin-top:12px;"><strong>读法：</strong>黄色行 = 当前目标 ROAS；绿色行 = 盈亏平衡点。高于平衡点即盈利，低于则亏损。</div>
+    </div>
+
+    <!-- Budget Allocation -->
+    <div class="card">
+        <h2>广告预算分阶段分配方案</h2>
+        <table>
+            <thead><tr><th>阶段</th><th>预算占比</th><th>预算金额</th><th>预计天数</th><th>日均预算</th><th>核心目标</th></tr></thead>
+            <tbody id="budgetBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Sensitivity -->
+    <div class="card">
+        <h2>敏感性分析</h2>
+        <h3>① 不同无忧卖降价金额的盈利模型 <span style="font-weight:normal;color:#8c8c8c;font-size:12px;">不参与=平台佣金 · 降价=无忧卖佣金</span></h3>
+        <table><thead><tr><th>降价金额/双</th><th>实际售价</th><th>净GSV</th><th>佣金</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>vs不参与</th></tr></thead><tbody id="priceSensBody"></tbody></table>
+        <div class="note" style="margin-top:8px;margin-bottom:16px;font-size:12px;padding:8px 14px;"><strong>读法：</strong>「不参与」为基准行（只收平台佣金），各降价行使用无忧卖佣金（互斥，不收平台佣金）。「vs不参与」&gt;0 表示该降价幅度比不参与更赚，&lt;0 则更亏。</div>
+        <h3>② 不同退货率（其他参数不变）</h3>
+        <table><thead><tr><th>退货率</th><th>退货数</th><th>净GSV</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th></tr></thead><tbody id="returnSensBody"></tbody></table>
+        <h3>③ 不同产品成本（其他参数不变）</h3>
+        <table><thead><tr><th>产品成本/双</th><th>产品总成本</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>盈亏平衡ROAS</th></tr></thead><tbody id="costSensBody"></tbody></table>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+        <h2>测算说明与建议</h2>
+        <ul>
+            <li><strong>GSV成本 1:2</strong>：广告投入与 GSV 比值 1:2（ROAS=2），广告预算 = 毛GSV ÷ 2。</li>
+            <li><strong>退货率</strong>：退货按全额退款，退货运费另算。产品成本按全部 1000 双计（备货已支出）。</li>
+            <li><strong>平台佣金（交易服务费）</strong>：按全部成交单 GSV 扣费（买家确认收货即扣，退货不退佣金）。普通订单 0.6%，鱼小铺 1.6%。</li>
+            <li><strong>无忧卖</strong>：开启后实际售价 = 原价 − 降价金额，GSV 按降价后重算。佣金互斥：参与无忧卖时只算无忧卖佣金（不收平台佣金），不参与时只算平台佣金。</li>
+            <li><strong>敏感性分析①</strong>：不同无忧卖降价金额的盈利模型——「不参与」为基准（平台佣金），各降价行用无忧卖佣金。「vs不参与」列直接告诉你降多少钱参与最划算。</li>
+            <li><strong>盈亏平衡 ROAS</strong>：广告效率达到此值时项目不赚不亏。</li>
+            <li><strong>启动资金</strong>：产品成本 + 广告预算为主要资金占用。</li>
+            <li>修改任意参数后所有表格自动联动更新。</li>
+        </ul>
+    </div>
+
+    <!-- 闲鱼超级擦亮投放策略 -->
+    <div class="card">
+        <h2>闲鱼「超级擦亮」投放计划策略</h2>
+        <div class="note" style="margin-bottom:16px;">
+            <strong>投放工具：</strong>闲鱼后台「超级擦亮」——出价方式为<strong>控成本投放</strong>。优化目标可选：曝光量 / 浏览量 / 关注收藏量 / 咨询量 / 下单量。计划类型：套餐擦亮 / 自定义擦亮。<strong>定向仅支持选择投放时段</strong>，不支持兴趣/行为定向，因此核心通过「优化目标 + 出价 + 投放时段 + 素材差异化」来区分计划。预算金额随上方参数自动联动。
+        </div>
+
+        <!-- 三阶段总览 -->
+        <div class="xy-section-title">一、三阶段投放总览</div>
+        <table class="plan-table">
+            <thead><tr>
+                <th>阶段</th><th>优化目标</th><th>计划类型</th><th>出价方式</th><th>建议出价</th><th>日预算/条</th><th>计划数</th><th>阶段预算</th><th>天数</th><th>核心目标</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td class="phase-col"><span class="plan-tag p1">测款期</span></td>
+                    <td class="center">曝光量 + 浏览量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">控成本投放</td>
+                    <td class="center nowrap">¥3.7 / 次<br><span style="color:#8c8c8c;font-size:11px;">预计提升100%</span></td>
+                    <td class="center">¥50</td>
+                    <td class="center">5-8 条</td>
+                    <td class="center nowrap" id="xy-p1">—</td>
+                    <td class="center" id="xy-d1">—</td>
+                    <td>低价测素材·筛选能跑的品</td>
+                </tr>
+                <tr>
+                    <td class="phase-col"><span class="plan-tag p2">放量期</span></td>
+                    <td class="center">咨询量</td>
+                    <td class="center">套餐+自定义</td>
+                    <td class="center">控成本投放</td>
+                    <td class="center nowrap">¥4.4 / 次<br><span style="color:#8c8c8c;font-size:11px;">预计提升127%</span></td>
+                    <td class="center">¥150 → 递增</td>
+                    <td class="center">3-5 条</td>
+                    <td class="center nowrap" id="xy-p2">—</td>
+                    <td class="center" id="xy-d2">—</td>
+                    <td>放大优质计划·冲刺咨询量</td>
+                </tr>
+                <tr>
+                    <td class="phase-col"><span class="plan-tag p3">维稳期</span></td>
+                    <td class="center">下单量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">控成本投放</td>
+                    <td class="center nowrap">¥3.0-3.7 / 次<br><span style="color:#8c8c8c;font-size:11px;">降出价控成本</span></td>
+                    <td class="center">¥50-100</td>
+                    <td class="center">2-3 条</td>
+                    <td class="center nowrap" id="xy-p3">—</td>
+                    <td class="center" id="xy-d3">—</td>
+                    <td>稳ROI·清尾货·转化下单</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="legend">
+            <span><span class="legend-dot" style="background:#1677ff;"></span>测款期：低出价·全时段·多计划测素材</span>
+            <span><span class="legend-dot" style="background:#52c41a;"></span>放量期：高出价·高峰时段·聚焦 Top 计划</span>
+            <span><span class="legend-dot" style="background:#fa8c16;"></span>维稳期：降出价·精选时段·清仓转化</span>
+        </div>
+
+        <!-- 测款期明细 -->
+        <div class="xy-section-title" style="border-left-color:#1677ff;">二、测款期 · 逐计划明细 <span class="xy-phase-budget" id="xy-p1-detail">—</span></div>
+        <table class="plan-table">
+            <thead><tr>
+                <th>计划名称</th><th>优化目标</th><th>计划类型</th><th>出价</th><th>日预算</th><th>投放时段</th><th>创意策略</th><th>淘汰规则</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td>测款-A1-性价比引流</td>
+                    <td class="center">曝光量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>主图突出低价/无忧卖价<br>卖点：轻便透气百搭</td>
+                    <td rowspan="5" style="vertical-align:top;line-height:1.8;font-size:12px;">
+                        • 跑满 <strong>3 天</strong>，曝光量低于同梯队50% → 关停<br>
+                        • CTR &lt; 1.5% → 换主图再测一轮<br>
+                        • 浏览率（浏览/曝光）&lt; 8% → 优化主图<br>
+                        • 退货率 &gt; 25% → 直接关停<br>
+                        • 创意优化：<strong>已开启</strong><br>
+                        • 投放时段：全时段收集数据<br>
+                        • 测款期结束保留 <strong>2-3 条</strong>进入放量期
+                    </td>
+                </tr>
+                <tr>
+                    <td>测款-A2-品质种草</td>
+                    <td class="center">曝光量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>主图突出材质/做工<br>卖点：品牌故事+细节实拍</td>
+                </tr>
+                <tr>
+                    <td>测款-A3-场景实拍</td>
+                    <td class="center">浏览量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥4.4</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>视频素材15-30秒<br>开箱/上脚/走路实测</td>
+                </tr>
+                <tr>
+                    <td>测款-A4-无忧卖专属</td>
+                    <td class="center">浏览量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>突出降价+限时<br>无忧卖标签醒目</td>
+                </tr>
+                <tr>
+                    <td>测款-A5-宽泛测试</td>
+                    <td class="center">曝光量</td>
+                    <td class="center">套餐擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>白底图+实拍图+细节图<br>测不同主图 CTR</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 放量期明细 -->
+        <div class="xy-section-title" style="border-left-color:#52c41a;">三、放量期 · 逐计划明细 <span class="xy-phase-budget" id="xy-p2-detail">—</span></div>
+        <table class="plan-table">
+            <thead><tr>
+                <th>计划名称</th><th>优化目标</th><th>计划类型</th><th>出价</th><th>日预算</th><th>投放时段</th><th>创意策略</th><th>放量规则</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td>放量-B1-Top1放大</td>
+                    <td class="center">咨询量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥4.4 → ¥5.0</td>
+                    <td class="center">¥150 → 递增</td>
+                    <td>高峰时段<br>12:00-14:00<br>19:00-23:00</td>
+                    <td>爆款素材做变体<br>换背景/换文案/换角度</td>
+                    <td rowspan="4" style="vertical-align:top;line-height:1.8;font-size:12px;">
+                        • <strong>每 2-3 天递增 20-30%</strong> 日预算<br>
+                        • 出价从 ¥4.4 逐步提至 ¥5.0 拿量<br>
+                        • 日预算上限 ¥500-800/条<br>
+                        • 创意优化：<strong>已开启</strong><br>
+                        • 放量节奏：第1周1.5倍→第2周2倍→第3周达标<br>
+                        • 新增买家秀素材（真实好评返图）<br>
+                        • 每周至少上新 2 条素材<br>
+                        <strong style="color:#ff4d4f;">风控红线：</strong><br>
+                        • ROAS 低于目标 80% → 预警并减预算<br>
+                        • 退货率 &gt; 20% → 暂停放量排查<br>
+                        • 库存 &lt; 300 双 → 转维稳期
+                    </td>
+                </tr>
+                <tr>
+                    <td>放量-B2-Top2放大</td>
+                    <td class="center">咨询量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥4.4</td>
+                    <td class="center">¥150 → 递增</td>
+                    <td>高峰时段<br>12:00-14:00<br>19:00-23:00</td>
+                    <td>衍生计划（同品换素材）<br>测试无忧卖专属素材</td>
+                </tr>
+                <tr>
+                    <td>放量-B3-全时段拿量</td>
+                    <td class="center">咨询量</td>
+                    <td class="center">套餐擦亮</td>
+                    <td class="center">¥4.4</td>
+                    <td class="center">¥150</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>突出性价比优势<br>无忧卖标签醒目</td>
+                </tr>
+                <tr>
+                    <td>放量-B4-素材测试</td>
+                    <td class="center">浏览量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50-100</td>
+                    <td>午间时段<br>11:00-14:00</td>
+                    <td>每周上新2条素材<br>素材生命周期5-7天</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 维稳期明细 -->
+        <div class="xy-section-title" style="border-left-color:#fa8c16;">四、维稳期 · 逐计划明细 <span class="xy-phase-budget" id="xy-p3-detail">—</span></div>
+        <table class="plan-table">
+            <thead><tr>
+                <th>计划名称</th><th>优化目标</th><th>计划类型</th><th>出价</th><th>日预算</th><th>投放时段</th><th>创意策略</th><th>收敛规则</th>
+            </tr></thead>
+            <tbody>
+                <tr>
+                    <td>维稳-C1-Top1维持</td>
+                    <td class="center">下单量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥100</td>
+                    <td>晚间高峰<br>19:00-23:00</td>
+                    <td>保留最优素材<br>不再上新</td>
+                    <td rowspan="3" style="vertical-align:top;line-height:1.8;font-size:12px;">
+                        • 砍掉 ROAS &lt; 2 的计划<br>
+                        • 集中预算到 Top 2-3 条<br>
+                        • 日预算降至维持水平，<strong>不再加量</strong><br>
+                        • 出价从 ¥4.4 降至 ¥3.0-3.7<br>
+                        • 创意优化：<strong>已开启</strong><br>
+                        • 关闭表现差的素材组<br>
+                        <strong style="color:#fa8c16;">清库存策略：</strong><br>
+                        • 开启无忧卖降价清尾货<br>
+                        • 设置满减/优惠券提升客单价<br>
+                        • 鱼塘社区发帖引流（免费流量）<br>
+                        • 尾货 50 双以下 → 直接挂闲鱼一口价<br>
+                        • 站外引流：抖音/小红书 → 闲鱼成交
+                    </td>
+                </tr>
+                <tr>
+                    <td>维稳-C2-低价清仓</td>
+                    <td class="center">下单量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.0</td>
+                    <td class="center">¥50</td>
+                    <td>全时段<br>00:00-24:00</td>
+                    <td>突出清仓价/限时<br>无忧卖标签</td>
+                </tr>
+                <tr>
+                    <td>维稳-C3-追投转化</td>
+                    <td class="center">咨询量</td>
+                    <td class="center">自定义擦亮</td>
+                    <td class="center">¥3.7</td>
+                    <td class="center">¥50</td>
+                    <td>午间+晚间<br>12:00-14:00<br>19:00-23:00</td>
+                    <td>推荐关联款<br>（配色/SKU）</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 计划命名规范 -->
+        <div class="xy-section-title">五、计划命名规范</div>
+        <table class="sub-table">
+            <thead><tr><th>规范</th><th>格式</th><th>示例</th><th>说明</th></tr></thead>
+            <tbody>
+                <tr><td>命名格式</td><td>阶段-编号-素材方向</td><td>测款-A1-性价比引流</td><td>阶段：测款/放量/维稳；编号：A/B/C+序号</td></tr>
+                <tr><td>素材方向</td><td>中文短描述</td><td>品质种草 / 场景实拍 / 无忧卖专属</td><td>一眼看出这条计划测什么</td></tr>
+                <tr><td>出价标记</td><td>在备注中标明</td><td>建议出价¥3.7 / 自定义¥4.4</td><td>区分建议出价和自定义出价</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 优化目标与投放时段策略 -->
+        <div class="xy-section-title">六、优化目标与投放时段策略</div>
+        <table class="sub-table">
+            <thead><tr><th>优化目标</th><th>含义</th><th>适用阶段</th><th>投放时段建议</th><th>出价参考</th></tr></thead>
+            <tbody>
+                <tr><td>曝光量</td><td>最大化商品曝光，系统优先展示给更多用户</td><td>测款期</td><td>全时段 00:00-24:00</td><td>¥3.7 / 次</td></tr>
+                <tr><td>浏览量</td><td>优化进店浏览，筛选有兴趣的用户</td><td>测款期 / 放量期辅助</td><td>全时段或午间时段</td><td>¥3.7-4.4 / 次</td></tr>
+                <tr><td>关注收藏量</td><td>用户关注或收藏商品，深度意向</td><td>测款期备选</td><td>全时段</td><td>¥3.7 / 次</td></tr>
+                <tr><td>咨询量</td><td>用户发起旺旺咨询，强转化信号</td><td>放量期 / 维稳期辅助</td><td>高峰时段 12-14, 19-23</td><td>¥4.4 / 次</td></tr>
+                <tr><td>下单量</td><td>优化实际成交，最强转化目标</td><td>维稳期</td><td>晚间高峰 19-23</td><td>¥3.0-3.7 / 次</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 每日监控指标 -->
+        <div class="xy-section-title">七、每日监控指标</div>
+        <table class="sub-table">
+            <thead><tr><th>指标</th><th>测款期关注</th><th>放量期关注</th><th>维稳期关注</th><th>预警阈值</th></tr></thead>
+            <tbody>
+                <tr><td>花费</td><td>日花费是否超预算</td><td>日花费递增是否正常</td><td>日花费是否持续下降</td><td>日花费 > 日预算 120%</td></tr>
+                <tr><td>曝光量</td><td>各计划曝光对比·筛选 Top</td><td>—</td><td>—</td><td>单计划曝光 < 同梯队50%</td></tr>
+                <tr><td>浏览量</td><td>浏览率（浏览/曝光）</td><td>—</td><td>—</td><td>浏览率 < 8%</td></tr>
+                <tr><td>咨询量</td><td>—</td><td>咨询量是否随预算上升</td><td>咨询转化率</td><td>咨询量连续2天下降</td></tr>
+                <tr><td>下单量</td><td>—</td><td>—</td><td>每日成交单数</td><td>下单量连续3天下降</td></tr>
+                <tr><td>ROAS</td><td>—</td><td>每日记录，低于目标80%预警</td><td>是否稳定在目标以上</td><td>ROAS < 目标 × 80%</td></tr>
+                <tr><td>CPA</td><td>跑满3天 CPA > 目标2倍关停</td><td>CPA 是否随放量上升</td><td>—</td><td>CPA > 目标 × 2</td></tr>
+                <tr><td>CTR</td><td>CTR < 1.5% 换图</td><td>素材 CTR 衰减监控</td><td>—</td><td>CTR < 1.5%</td></tr>
+                <tr><td>退货率</td><td>退货率 > 25% 关停</td><td>退货率 > 20% 暂停放量</td><td>退货趋势是否收敛</td><td>退货率 > 20%</td></tr>
+                <tr><td>库存</td><td>—</td><td>库存 < 300 双转维稳</td><td>尾货 < 50 双挂一口价</td><td>库存 < 300 / < 50</td></tr>
+            </tbody>
+        </table>
+
+        <!-- 素材方向参考 -->
+        <div class="xy-section-title">八、素材方向参考</div>
+        <table class="sub-table">
+            <thead><tr><th>方向</th><th>适用阶段</th><th>主图要求</th><th>文案卖点</th><th>视频素材</th></tr></thead>
+            <tbody>
+                <tr><td>性价比引流</td><td>测款+放量</td><td>白底图+价格醒目</td><td>轻便/透气/防滑/百搭</td><td>15秒快速展示+价格</td></tr>
+                <tr><td>品质种草</td><td>测款+放量</td><td>材质特写+做工细节</td><td>品牌故事+面料解析</td><td>30秒深度开箱</td></tr>
+                <tr><td>场景实拍</td><td>测款+放量</td><td>穿搭/上脚实拍</td><td>日常百搭/运动通勤</td><td>走路实测+多场景</td></tr>
+                <tr><td>无忧卖专属</td><td>全阶段</td><td>降价标签+限时</td><td>无忧卖价+限量清仓</td><td>降价对比+抢购氛围</td></tr>
+                <tr><td>买家秀</td><td>放量+维稳</td><td>真实好评返图</td><td>买家真实评价+推荐</td><td>视频好评合集</td></tr>
+            </tbody>
+        </table>
+
+        <div class="note" style="margin-top:16px;">
+            <strong>执行节奏总览：</strong>测款期重在「快」——优化目标选曝光量/浏览量、用建议出价 ¥3.7 保守起步、全时段投放、多条计划快速试错淘汰；放量期重在「稳」——优化目标切至咨询量、出价提至 ¥4.4 递增预算、聚焦高峰时段、严控 ROAS 和退货率；维稳期重在「收」——优化目标切至下单量、降出价至 ¥3.0-3.7、精选时段集中预算清仓转化。每个阶段关键指标达标后再进下一阶段，不要跳步。<strong>创意优化全程开启</strong>，让系统自动择优展示素材。
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== Helpers ==========
+function fmt(n, d) { if (d === undefined) d = 2; if (!isFinite(n)) return '—'; return '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt0(n) { return fmt(n, 0); }
+function fmtInt(n) { return n.toLocaleString('zh-CN', { maximumFractionDigits: 0 }); }
+function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function sign(n) { return n >= 0 ? '+' : ''; }
+
+// ========== Core Calculation ==========
+function calc(p) {
+    var price = p.price, productCost = p.productCost, quantity = p.quantity;
+    var returnRate = p.returnRate, ratio = p.ratio, platformFeeRate = p.platformFeeRate;
+    var shipping = p.shipping, returnShipping = p.returnShipping, dailyOrders = p.dailyOrders;
+
+    var wmEnabled = p.wmEnabled;
+    var priceReduction = wmEnabled ? p.priceReduction : 0;
+    var wmCommRate = wmEnabled ? p.wmCommRate : 0;
+
+    var actualPrice = price - priceReduction;
+    var grossGSV = quantity * actualPrice;
+    var returnCount = Math.round(quantity * returnRate);
+    var returnRefund = returnCount * actualPrice;
+    var netGSV = grossGSV - returnRefund;
+    var validOrders = quantity - returnCount;
+
+    var totalProductCost = quantity * productCost;
+    // 交易服务费按全部成交单扣取（确认收货即扣，退货不退佣金）
+    var platformFee = wmEnabled ? 0 : grossGSV * platformFeeRate;
+    var wmCommission = wmEnabled ? grossGSV * wmCommRate : 0;
+    var totalShipping = quantity * shipping;
+    var totalReturnShip = returnCount * returnShipping;
+    var nonAdCost = totalProductCost + platformFee + wmCommission + totalShipping + totalReturnShip;
+
+    var adBudget = grossGSV / ratio;
+    var totalCost = nonAdCost + adBudget;
+    var profit = netGSV - totalCost;
+    var profitRate = netGSV > 0 ? profit / netGSV : 0;
+
+    var roas = adBudget > 0 ? grossGSV / adBudget : 0;
+    var cpa = validOrders > 0 ? adBudget / validOrders : 0;
+    var adPerPair = adBudget / quantity;
+    var grossMargin = netGSV > 0 ? (netGSV - totalProductCost) / netGSV : 0;
+    var breakEvenROAS = (netGSV - nonAdCost) > 0 ? grossGSV / (netGSV - nonAdCost) : Infinity;
+    var sellingDays = Math.ceil(quantity / Math.max(dailyOrders, 1));
+    var startupCapital = totalProductCost + adBudget;
+    var totalReduction = quantity * priceReduction;
+
+    // Without 无忧卖 for comparison
+    var noWmGrossGSV = quantity * price;
+    var noWmReturnRefund = returnCount * price;
+    var noWmNetGSV = noWmGrossGSV - noWmReturnRefund;
+    var noWmPlatformFee = noWmGrossGSV * platformFeeRate;
+    var noWmAdBudget = noWmGrossGSV / ratio;
+    var noWmNonAdCost = totalProductCost + noWmPlatformFee + totalShipping + totalReturnShip;
+    var noWmTotalCost = noWmNonAdCost + noWmAdBudget;
+    var noWmProfit = noWmNetGSV - noWmTotalCost;
+
+    return {
+        actualPrice: actualPrice, grossGSV: grossGSV, returnCount: returnCount, returnRefund: returnRefund,
+        netGSV: netGSV, validOrders: validOrders,
+        totalProductCost: totalProductCost, platformFee: platformFee, wmCommission: wmCommission,
+        totalShipping: totalShipping, totalReturnShip: totalReturnShip, nonAdCost: nonAdCost,
+        adBudget: adBudget, totalCost: totalCost, profit: profit, profitRate: profitRate,
+        roas: roas, cpa: cpa, adPerPair: adPerPair, grossMargin: grossMargin,
+        breakEvenROAS: breakEvenROAS, sellingDays: sellingDays, startupCapital: startupCapital,
+        totalReduction: totalReduction,
+        wmEnabled: wmEnabled, priceReduction: priceReduction, wmCommRate: wmCommRate,
+        noWmGrossGSV: noWmGrossGSV, noWmNetGSV: noWmNetGSV, noWmPlatformFee: noWmPlatformFee,
+        noWmAdBudget: noWmAdBudget, noWmNonAdCost: noWmNonAdCost, noWmTotalCost: noWmTotalCost, noWmProfit: noWmProfit,
+        price: price, productCost: productCost, quantity: quantity, returnRate: returnRate, ratio: ratio,
+        platformFeeRate: platformFeeRate, shipping: shipping, returnShipping: returnShipping, dailyOrders: dailyOrders
+    };
+}
+
+// ========== UI Update ==========
+function updateUI() {
+    var wmEnabled = document.getElementById('wuyoumai').checked;
+    var wmSection = document.getElementById('wmSection');
+    var wmNote = document.getElementById('wmNote');
+    var wmTag = document.getElementById('tagWM');
+    var wmCompareCard = document.getElementById('wmCompareCard');
+
+    if (wmEnabled) {
+        wmSection.classList.remove('disabled');
+        wmNote.style.display = 'block';
+        wmTag.style.display = 'inline-block';
+        wmCompareCard.style.display = 'block';
+    } else {
+        wmSection.classList.add('disabled');
+        wmNote.style.display = 'none';
+        wmTag.style.display = 'none';
+        wmCompareCard.style.display = 'none';
+    }
+
+    var p = {
+        price: val('price'), productCost: val('productCost'), quantity: val('quantity'),
+        returnRate: val('returnRate') / 100, ratio: val('ratio'),
+        platformFeeRate: val('platformFee') / 100, shipping: val('shipping'),
+        returnShipping: val('returnShipping'), dailyOrders: val('dailyOrders'),
+        wmEnabled: wmEnabled, priceReduction: val('priceReduction'), wmCommRate: val('wmComm') / 100
+    };
+    var r = calc(p);
+
+    // Header tags
+    document.getElementById('tagQuantity').textContent = '备货 ' + fmtInt(p.quantity) + ' 双';
+    document.getElementById('tagReturn').textContent = '退货率 ' + fmtPct(p.returnRate).replace('.0%', '%');
+    document.getElementById('tagRatio').textContent = 'GSV:成本 = 1:' + p.ratio;
+    document.getElementById('tagDaily').textContent = '日均 ' + fmtInt(p.dailyOrders) + ' 单';
+
+    // Summary
+    document.getElementById('summaryNetGSV').textContent = fmt(r.netGSV);
+    document.getElementById('summaryAdBudget').textContent = fmt(r.adBudget);
+    document.getElementById('summaryTotalCost').textContent = fmt(r.totalCost);
+    var pEl = document.getElementById('summaryProfit');
+    pEl.textContent = sign(r.profit) + fmt(r.profit);
+    pEl.className = 'value ' + (r.profit >= 0 ? 'profit' : 'loss');
+
+    // Sales table
+    var salesHtml = '';
+    if (wmEnabled) {
+        salesHtml += '<tr><td>原价/双</td><td class="num">—</td><td class="num">' + fmt0(p.price) + '</td><td class="num">—</td></tr>';
+        salesHtml += '<tr class="wm-row"><td>无忧卖降价</td><td class="num">—</td><td class="num loss">-' + fmt0(r.priceReduction) + '</td><td class="num loss">-' + fmt(r.totalReduction) + '</td></tr>';
+        salesHtml += '<tr><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num"><strong>' + fmt0(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt(r.grossGSV) + '</strong></td></tr>';
+    } else {
+        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmt0(p.price) + '</td><td class="num">' + fmt(r.grossGSV) + '</td></tr>';
+    }
+    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' 双</td><td class="num">' + fmt0(r.actualPrice) + '</td><td class="num loss">-' + fmt(r.returnRefund) + '</td></tr>';
+    salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>净销售（有效订单）</strong></td><td class="num">' + fmtInt(r.validOrders) + ' 双</td><td class="num">—</td><td class="num profit">' + fmt(r.netGSV) + '</td></tr>';
+    document.getElementById('salesBody').innerHTML = salesHtml;
+
+    // Cost table
+    var costRows = [
+        ['产品成本', fmtInt(p.quantity) + '双 × ' + fmt0(p.productCost), r.totalProductCost]
+    ];
+    if (wmEnabled) {
+        costRows.push(['无忧卖佣金', fmtPct(p.wmCommRate) + ' × 全部成交GSV', r.wmCommission]);
+    } else {
+        costRows.push(['平台佣金', fmtPct(p.platformFeeRate) + ' × 全部成交GSV', r.platformFee]);
+    }
+    costRows.push(['发货运费', fmtInt(p.quantity) + '单 × ' + fmt0(p.shipping), r.totalShipping]);
+    costRows.push(['退货运费', fmtInt(r.returnCount) + '单 × ' + fmt0(p.returnShipping), r.totalReturnShip]);
+    costRows.push(['广告预算', '毛GSV ÷ ' + p.ratio, r.adBudget]);
+
+    var costHtml = '';
+    costRows.forEach(function (rw) {
+        var isWm = rw[0].indexOf('无忧卖') >= 0;
+        costHtml += '<tr' + (isWm ? ' class="wm-row"' : '') + '><td>' + rw[0] + '</td><td style="color:#8c8c8c;font-size:13px;">' + rw[1] + '</td><td class="num">' + fmt(rw[2]) + '</td><td class="num">' + fmtPct(rw[2] / r.netGSV) + '</td></tr>';
+    });
+    costHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>总成本</strong></td><td></td><td class="num"><strong>' + fmt(r.totalCost) + '</strong></td><td class="num"><strong>' + fmtPct(r.totalCost / r.netGSV) + '</strong></td></tr>';
+    costHtml += '<tr><td><strong>净利润</strong></td><td style="color:#8c8c8c;font-size:13px;">净GSV − 总成本</td><td class="num ' + (r.profit >= 0 ? 'profit' : 'loss') + '"><strong>' + sign(r.profit) + fmt(r.profit) + '</strong></td><td class="num ' + (r.profit >= 0 ? 'profit' : 'loss') + '"><strong>' + fmtPct(r.profitRate) + '</strong></td></tr>';
+    document.getElementById('costBody').innerHTML = costHtml;
+
+    // 无忧卖对比
+    if (wmEnabled) {
+        var diff = r.profit - r.noWmProfit;
+        var cmpRows = [
+            ['实际售价/双', fmt0(p.price), fmt0(r.actualPrice), '<span class="loss">' + sign(-r.priceReduction) + fmt0(r.priceReduction) + '</span>'],
+            ['毛 GSV', fmt(r.noWmGrossGSV), fmt(r.grossGSV), '<span class="loss">' + sign(r.grossGSV - r.noWmGrossGSV) + fmt(r.grossGSV - r.noWmGrossGSV) + '</span>'],
+            ['净 GSV', fmt(r.noWmNetGSV), fmt(r.netGSV), '<span class="loss">' + sign(r.netGSV - r.noWmNetGSV) + fmt(r.netGSV - r.noWmNetGSV) + '</span>'],
+            ['平台佣金', fmt(r.noWmPlatformFee), r.platformFee > 0 ? fmt(r.platformFee) : '<span style="color:#bfbfbf;">不收取</span>', '<span class="profit">-' + fmt(r.noWmPlatformFee) + '</span>'],
+            ['无忧卖佣金', '<span style="color:#bfbfbf;">不收取</span>', fmt(r.wmCommission), '<span class="loss">+' + fmt(r.wmCommission) + '</span>'],
+            ['降价总额', fmt(0), fmt(r.totalReduction), '<span class="loss">+' + fmt(r.totalReduction) + '</span>'],
+            ['广告预算', fmt(r.noWmAdBudget), fmt(r.adBudget), '<span class="profit">' + sign(r.adBudget - r.noWmAdBudget) + fmt(Math.abs(r.adBudget - r.noWmAdBudget)) + '</span>'],
+            ['总成本', fmt(r.noWmTotalCost), fmt(r.totalCost), '<span class="' + (r.totalCost - r.noWmTotalCost >= 0 ? 'loss' : 'profit') + '">' + sign(r.totalCost - r.noWmTotalCost) + fmt(Math.abs(r.totalCost - r.noWmTotalCost)) + '</span>'],
+            ['<strong>净利润</strong>', '<strong>' + sign(r.noWmProfit) + fmt(r.noWmProfit) + '</strong>', '<strong>' + sign(r.profit) + fmt(r.profit) + '</strong>', '<strong class="' + (diff >= 0 ? 'profit' : 'loss') + '">' + sign(diff) + fmt(diff) + '</strong>']
+        ];
+        var cmpHtml = '';
+        cmpRows.forEach(function (rw) {
+            cmpHtml += '<tr><td>' + rw[0] + '</td><td class="num">' + rw[1] + '</td><td class="num">' + rw[2] + '</td><td class="num">' + rw[3] + '</td></tr>';
+        });
+        document.getElementById('wmCompareBody').innerHTML = cmpHtml;
+
+        var verdict = document.getElementById('wmVerdict');
+        if (diff >= 0) {
+            verdict.innerHTML = '<strong>结论：</strong>参与无忧卖后净利润 <span style="color:#52c41a;font-weight:700;">增加 ' + fmt(diff) + '</span>。无忧卖带来的广告费节省 + 平台佣金免除 > 降价损失 + 无忧卖佣金，建议参与。';
+        } else {
+            verdict.innerHTML = '<strong>结论：</strong>参与无忧卖后净利润 <span style="color:#ff4d4f;font-weight:700;">减少 ' + fmt(Math.abs(diff)) + '</span>。降价损失 + 无忧卖佣金 > 广告费节省 + 平台佣金免除。需评估无忧卖带来的转化率提升能否弥补差额。';
+        }
+    }
+
+    // Metrics
+    document.getElementById('m-roas').textContent = r.roas.toFixed(1);
+    document.getElementById('m-cpa').textContent = fmt(r.cpa);
+    document.getElementById('m-adpair').textContent = fmt(r.adPerPair);
+    document.getElementById('m-margin').textContent = fmtPct(r.grossMargin);
+    document.getElementById('m-breakeven').textContent = isFinite(r.breakEvenROAS) ? r.breakEvenROAS.toFixed(2) : '—';
+    document.getElementById('m-capital').textContent = fmt(r.startupCapital);
+
+    // ROAS sensitivity
+    var roasVals = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
+    var roasHtml = '';
+    roasVals.forEach(function (rv) {
+        var ad = r.grossGSV / rv;
+        var tc = r.nonAdCost + ad;
+        var pf = r.netGSV - tc;
+        var pr = pf / r.netGSV;
+        var isCur = Math.abs(rv - p.ratio) < 0.01;
+        var isBE = isFinite(r.breakEvenROAS) && Math.abs(rv - r.breakEvenROAS) < 0.25;
+        var cls = isBE ? 'break-even-row' : (isCur ? 'highlight-row' : '');
+        var status = pf > 0 ? '<span class="profit">盈利</span>' : '<span class="loss">亏损</span>';
+        if (isBE) status = '≈ 盈亏平衡';
+        roasHtml += '<tr class="' + cls + '"><td>' + rv.toFixed(1) + (isCur ? ' ← 当前' : '') + '</td><td class="num">' + fmt(r.grossGSV) + '</td><td class="num">' + fmt(r.netGSV) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (pf >= 0 ? 'profit' : 'loss') + '">' + sign(pf) + fmt(pf) + '</td><td class="num">' + fmtPct(pr) + '</td><td>' + status + '</td></tr>';
+    });
+    document.getElementById('roasBody').innerHTML = roasHtml;
+
+    // Budget allocation
+    var phases = [
+        ['测款期', 0.20, 0.15, '低价测素材·筛选能跑的品'],
+        ['放量期', 0.60, 0.60, '放大优质计划·冲刺咨询量'],
+        ['维稳期', 0.20, 0.25, '稳ROI·清尾货·转化下单']
+    ];
+    var bHtml = '';
+    phases.forEach(function (ph) {
+        var budget = r.adBudget * ph[1];
+        var days = Math.max(1, Math.round(r.sellingDays * ph[2]));
+        var daily = budget / days;
+        bHtml += '<tr><td><strong>' + ph[0] + '</strong></td><td class="num">' + fmtPct(ph[1]) + '</td><td class="num">' + fmt(budget) + '</td><td class="num">' + days + ' 天</td><td class="num">' + fmt(daily) + '</td><td style="font-size:13px;color:#595959;">' + ph[3] + '</td></tr>';
+    });
+    bHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>合计</strong></td><td class="num">100%</td><td class="num"><strong>' + fmt(r.adBudget) + '</strong></td><td class="num">' + r.sellingDays + ' 天</td><td class="num"><strong>' + fmt(r.adBudget / r.sellingDays) + '</strong></td><td></td></tr>';
+    document.getElementById('budgetBody').innerHTML = bHtml;
+
+    // 无忧卖降价金额 sensitivity
+    var reductions = [0, 3, 5, 8, 10, 15];
+    var wmRate = val('wmComm') / 100;
+    var pH = '';
+    // baseline: 不参与无忧卖（平台佣金）
+    var baseG = p.quantity * p.price;
+    var baseRf = r.returnCount * p.price;
+    var baseN = baseG - baseRf;
+    var baseAd = baseG / p.ratio;
+    var baseComm = baseG * p.platformFeeRate;
+    var baseTC = p.quantity * p.productCost + baseComm + p.quantity * p.shipping + r.returnCount * p.returnShipping + baseAd;
+    var baseProfit = baseN - baseTC;
+
+    reductions.forEach(function (rd) {
+        var actPrice, g, rf, n, ad, comm, commLabel, tc, profit, prr, diff, isC;
+        if (rd === 0) {
+            actPrice = p.price; n = baseN; ad = baseAd; comm = baseComm;
+            commLabel = '平台' + (p.platformFeeRate * 100).toFixed(0) + '%';
+            tc = baseTC; profit = baseProfit; prr = n > 0 ? profit / n : 0; diff = 0;
+            isC = !wmEnabled;
+            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td><strong>不参与</strong>' + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmt0(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#8c8c8c;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num" style="color:#bfbfbf;">基准</td></tr>';
+        } else {
+            actPrice = p.price - rd;
+            g = p.quantity * actPrice; rf = r.returnCount * actPrice; n = g - rf;
+            ad = g / p.ratio; comm = g * wmRate;
+            commLabel = '无忧卖' + (wmRate * 100).toFixed(0) + '%';
+            tc = p.quantity * p.productCost + comm + p.quantity * p.shipping + r.returnCount * p.returnShipping + ad;
+            profit = n - tc; prr = n > 0 ? profit / n : 0; diff = profit - baseProfit;
+            isC = wmEnabled && Math.abs(rd - r.priceReduction) < 0.01;
+            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + (isC ? '<strong>¥' + rd + '</strong>' : '¥' + rd) + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmt0(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#fa8c16;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num ' + (diff >= 0 ? 'profit' : 'loss') + '">' + (diff >= 0 ? '+' : '') + fmt(diff) + '</td></tr>';
+        }
+    });
+    document.getElementById('priceSensBody').innerHTML = pH;
+
+    // Return rate sensitivity
+    var rrs = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30];
+    var rrH = '';
+    rrs.forEach(function (rr) {
+        var rc = Math.round(p.quantity * rr);
+        var actPrice = r.actualPrice;
+        var rf = rc * actPrice;
+        var g = p.quantity * actPrice;
+        var n = g - rf;
+        var ad = g / p.ratio;
+        var pc = p.quantity * p.productCost;
+        var comm = wmEnabled ? (g * r.wmCommRate) : (g * p.platformFeeRate);
+        var ts = p.quantity * p.shipping;
+        var trs = rc * p.returnShipping;
+        var tc = pc + comm + ts + trs + ad;
+        var profit = n - tc;
+        var prr = n > 0 ? profit / n : 0;
+        var isC = Math.abs(rr - p.returnRate) < 0.001;
+        rrH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmtPct(rr).replace('.0%', '%') + (isC ? ' ←' : '') + '</td><td class="num">' + rc + ' 双</td><td class="num">' + fmt(n) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td></tr>';
+    });
+    document.getElementById('returnSensBody').innerHTML = rrH;
+
+    // Product cost sensitivity
+    var costs = [20, 25, 30, 35, 40, 45, 50];
+    var cH = '';
+    costs.forEach(function (pc) {
+        var tpc = p.quantity * pc;
+        var ad = r.grossGSV / p.ratio;
+        var comm = r.platformFee + r.wmCommission;
+        var ts = p.quantity * p.shipping;
+        var trs = r.returnCount * p.returnShipping;
+        var nonAd = tpc + comm + ts + trs;
+        var tc = nonAd + ad;
+        var profit = r.netGSV - tc;
+        var prr = r.netGSV > 0 ? profit / r.netGSV : 0;
+        var be = (r.netGSV - nonAd) > 0 ? r.grossGSV / (r.netGSV - nonAd) : Infinity;
+        var isC = Math.abs(pc - p.productCost) < 0.01;
+        cH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmt0(pc) + (isC ? ' ←' : '') + '</td><td class="num">' + fmt(tpc) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num">' + (isFinite(be) ? be.toFixed(2) : '—') + '</td></tr>';
+    });
+    document.getElementById('costSensBody').innerHTML = cH;
+
+    // 闲鱼策略预算联动
+    var xyPhases = [
+        ['xy-p1', 'xy-d1', 'xy-p1-detail', 0.20, 0.15],
+        ['xy-p2', 'xy-d2', 'xy-p2-detail', 0.60, 0.60],
+        ['xy-p3', 'xy-d3', 'xy-p3-detail', 0.20, 0.25]
+    ];
+    xyPhases.forEach(function (ph) {
+        var budget = r.adBudget * ph[3];
+        var days = Math.max(1, Math.round(r.sellingDays * ph[4]));
+        var daily = budget / days;
+        var budgetEl = document.getElementById(ph[0]);
+        if (budgetEl) budgetEl.textContent = fmt(budget);
+        var daysEl = document.getElementById(ph[1]);
+        if (daysEl) daysEl.textContent = days + ' 天';
+        var detailEl = document.getElementById(ph[2]);
+        if (detailEl) detailEl.textContent = '预算 ' + fmt(budget) + ' · 约' + days + '天 · 日均' + fmt(daily);
+    });
+}
+
+// ========== Init ==========
+document.querySelectorAll('input').forEach(function (el) {
+    el.addEventListener('input', updateUI);
+    if (el.type === 'checkbox') el.addEventListener('change', updateUI);
+});
+updateUI();
+</script>
+</body>
+</html>
