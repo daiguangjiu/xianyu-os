@@ -1106,8 +1106,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.6.3';
-var BUILD_TIME = '2026-07-24 10:46';
+var APP_VERSION = 'v3.6.4';
+var BUILD_TIME = '2026-07-24 11:15';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -1760,24 +1760,57 @@ function updateUI() {
     document.getElementById('m-breakeven').textContent = isFinite(r.breakEvenROAS) ? r.breakEvenROAS.toFixed(2) : '—';
     document.getElementById('m-capital').textContent = fmt(r.startupCapital);
 
-    // ROAS sensitivity
-    var step = 0.5;
-    var minRoas = 0.5;
-    var maxRoas = 4.0;
+    // ROAS sensitivity — 从1开始，灵活步长，控制~10档
+    var minRoas = 1.0;
+    if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0 && r.breakEvenROAS < 1.0) {
+        minRoas = 0.5;
+    }
+    var endRoas = 4.0;
     if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0) {
-        maxRoas = Math.max(maxRoas, Math.ceil(r.breakEvenROAS / step) * step + 2.0);
+        endRoas = Math.max(endRoas, Math.ceil(r.breakEvenROAS) + 2.0);
+    }
+    if (p.ratio > 0) {
+        endRoas = Math.max(endRoas, p.ratio + 2.0);
+    }
+    var totalRange = endRoas - minRoas;
+    var step = 0.5;
+    var count = Math.floor(totalRange / step) + 1;
+    if (count > 11) {
+        step = totalRange / 9;
+        if (step <= 0.5) step = 0.5;
+        else if (step <= 1.0) step = 1.0;
+        else if (step <= 2.0) step = 2.0;
+        else step = Math.ceil(step);
     }
     var roasVals = [];
-    for (var rv = minRoas; rv <= maxRoas + 0.001; rv += step) {
-        roasVals.push(Math.round(rv * 10) / 10);
+    for (var rv = minRoas; rv <= endRoas + 0.001; rv += step) {
+        var v = Math.round(rv * 100) / 100;
+        if (roasVals.indexOf(v) === -1) roasVals.push(v);
     }
-    // 把当前目标 ROAS 也纳入表格
-    if (p.ratio > 0 && !roasVals.some(function (v) { return Math.abs(v - p.ratio) < 0.01; })) {
-        roasVals.push(Math.round(p.ratio * 10) / 10);
-        roasVals.sort(function (a, b) { return a - b; });
+    // 确保精确盈亏平衡点在列表中
+    if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0) {
+        var beVal = Math.round(r.breakEvenROAS * 100) / 100;
+        if (!roasVals.some(function (v) { return Math.abs(v - beVal) < 0.005; })) {
+            roasVals.push(beVal);
+        }
+    }
+    // 确保当前目标 ROAS 在列表中
+    if (p.ratio > 0 && !roasVals.some(function (v) { return Math.abs(v - p.ratio) < 0.005; })) {
+        roasVals.push(Math.round(p.ratio * 100) / 100);
+    }
+    roasVals.sort(function (a, b) { return a - b; });
+    // 超过12档时裁剪到~10档
+    if (roasVals.length > 12) {
+        var filtered = [];
+        var stride = (roasVals.length - 1) / 9;
+        for (var i = 0; i <= 9; i++) {
+            var v2 = roasVals[Math.round(i * stride)];
+            if (filtered.indexOf(v2) === -1) filtered.push(v2);
+        }
+        roasVals = filtered;
     }
 
-    // 先计算所有行，找到最接近盈亏平衡 ROAS 的行标绿
+    // 计算所有行，精确匹配盈亏平衡点标绿
     var rows = roasVals.map(function (rv) {
         var ad = r.grossGSV / rv;
         var tc = r.nonAdCost + ad;
@@ -1786,26 +1819,29 @@ function updateUI() {
     });
     var beIndex = -1;
     if (isFinite(r.breakEvenROAS) && r.breakEvenROAS > 0) {
-        var minDiff = Infinity;
+        var beMatch = Math.round(r.breakEvenROAS * 100) / 100;
         rows.forEach(function (row, idx) {
-            var diff = Math.abs(row.rv - r.breakEvenROAS);
-            if (diff < minDiff) {
-                minDiff = diff;
-                beIndex = idx;
-            }
+            if (Math.abs(row.rv - beMatch) < 0.005) beIndex = idx;
         });
+        if (beIndex === -1) {
+            var minDiff = Infinity;
+            rows.forEach(function (row, idx) {
+                var diff = Math.abs(row.rv - r.breakEvenROAS);
+                if (diff < minDiff) { minDiff = diff; beIndex = idx; }
+            });
+        }
     }
 
     var roasHtml = '';
     rows.forEach(function (row, idx) {
         var rv = row.rv, ad = row.ad, tc = row.tc, pf = row.pf;
         var pr = pf / r.netGSV;
-        var isCur = Math.abs(rv - p.ratio) < 0.01;
+        var isCur = Math.abs(rv - p.ratio) < 0.005;
         var isBE = idx === beIndex;
         var cls = isBE ? 'break-even-row' : (isCur ? 'highlight-row' : '');
-        var status = pf > 0 ? '<span class="profit">盈利</span>' : '<span class="loss">亏损</span>';
-        if (isBE) status = '≈ 盈亏平衡';
-        roasHtml += '<tr class="' + cls + '"><td>' + rv.toFixed(1) + (isCur ? ' ← 当前' : '') + '</td><td class="num">' + fmt(r.grossGSV) + '</td><td class="num">' + fmt(r.netGSV) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (pf >= 0 ? 'profit' : 'loss') + '">' + sign(pf) + fmt(pf) + '</td><td class="num">' + fmtPct(pr) + '</td><td>' + status + '</td></tr>';
+        var status = isBE ? '≈ 盈亏平衡' : (pf > 0 ? '<span class="profit">盈利</span>' : '<span class="loss">亏损</span>');
+        var rvStr = Math.abs(rv - Math.round(rv)) < 0.005 ? rv.toFixed(0) : (Math.abs(rv * 10 - Math.round(rv * 10)) < 0.05 ? rv.toFixed(1) : rv.toFixed(2));
+        roasHtml += '<tr class="' + cls + '"><td>' + rvStr + (isCur ? ' ← 当前' : '') + '</td><td class="num">' + fmt(r.grossGSV) + '</td><td class="num">' + fmt(r.netGSV) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (pf >= 0 ? 'profit' : 'loss') + '">' + sign(pf) + fmt(pf) + '</td><td class="num">' + fmtPct(pr) + '</td><td>' + status + '</td></tr>';
     });
     document.getElementById('roasBody').innerHTML = roasHtml;
 
@@ -2613,8 +2649,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.6.3';
-var BUILD_TIME = '2026-07-24 10:46';
+var APP_VERSION = 'v3.6.4';
+var BUILD_TIME = '2026-07-24 11:15';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
