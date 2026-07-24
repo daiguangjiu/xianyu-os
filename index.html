@@ -145,6 +145,18 @@
         .funnel-compare-card.alert .value { color: #ff4d4f; }
         .funnel-compare-card.ok { background: #f6ffed; }
         .funnel-compare-card.ok .value { color: #52c41a; }
+        /* 分步推演表 */
+        .funnel-path { margin: 12px 0 16px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
+        .funnel-path table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .funnel-path th { background: #fafafa; padding: 8px 14px; text-align: left; font-weight: 600; color: #595959; border-bottom: 1px solid #e8e8e8; font-size: 12px; }
+        .funnel-path td { padding: 9px 14px; border-bottom: 1px solid #f0f0f0; }
+        .funnel-path tr:last-child td { border-bottom: none; }
+        .funnel-path .step-name { font-weight: 600; color: #262626; }
+        .funnel-path .step-op { color: #8c8c8c; font-size: 12px; }
+        .funnel-path .step-val { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; font-family: "SF Mono", "Menlo", monospace; }
+        .funnel-path .step-note { color: #bfbfbf; font-size: 11px; }
+        .funnel-path tr.highlight td { background: #fffbe6; }
+        .funnel-path tr.highlight .step-val { color: #D85A30; }
 
         /* V3 每日数据 */
         .v3-form { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; align-items: end; }
@@ -513,10 +525,44 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
             <h3>正推模式：广告预算 → 预测成交单量 → 预测利润</h3>
             <div class="note" style="background:#f0f5ff;border-color:#adc6ff;color:#003a8c;margin-bottom:12px;font-size:13px;">
                 自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量。
-                <span style="display:inline-block;margin-left:12px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #adc6ff;">
-                    预测成交单量：<strong id="forwardPredictedOrders" style="font-size:18px;color:#0F6E56;">—</strong> <span class="unit-text">双</span>
-                </span>
                 <span style="display:inline-block;margin-left:8px;font-size:11px;color:#1677ff;background:#e6f4ff;padding:2px 6px;border-radius:4px;">随 CPC/CTR/咨询率/成交率实时变化</span>
+            </div>
+            <div class="funnel-path">
+                <table>
+                    <thead><tr><th style="width:22%">步骤</th><th style="width:25%">计算逻辑</th><th style="width:28%">数值</th><th style="width:25%">当前系数</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td class="step-name">广告预算</td>
+                            <td class="step-op">主模型自动取</td>
+                            <td class="step-val" id="fp_budget">&yen;—</td>
+                            <td class="step-note">按 ROAS 算出</td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">点击量</td>
+                            <td class="step-op">预算 &divide; CPC</td>
+                            <td class="step-val" id="fp_clicks">— 次</td>
+                            <td class="step-note" id="fp_cpc_note">CPC &yen;—</td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">曝光量</td>
+                            <td class="step-op">点击 &divide; CTR</td>
+                            <td class="step-val" id="fp_impressions">— 次</td>
+                            <td class="step-note" id="fp_ctr_note">CTR —%（免费）</td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">咨询量</td>
+                            <td class="step-op">点击 &times; 咨询率</td>
+                            <td class="step-val" id="fp_consultations">— 次</td>
+                            <td class="step-note" id="fp_consult_note">咨询率 —%</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td class="step-name">成交单量</td>
+                            <td class="step-op">咨询 &times; 成交率</td>
+                            <td class="step-val" id="fp_orders">— 次</td>
+                            <td class="step-note" id="fp_convert_note">成交率 —%</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
         <div id="backwardInput" style="display:none;">
@@ -525,11 +571,44 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <div class="input-group"><label>目标成交单量</label><div class="input-wrapper"><input type="number" id="funnelTargetInput" value="1000" min="1" step="10"><span class="suffix unit-text">双</span></div></div>
                 <div class="input-group" style="display:flex;align-items:flex-end;"><button type="button" onclick="applyFunnelBudget()" style="padding:8px 16px;background:#0F6E56;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap;">应用到主模型 →</button></div>
             </div>
-            <div class="note" style="background:#fff7e6;border-color:#ffd591;color:#ad6800;margin-top:8px;margin-bottom:12px;font-size:12px;">
-                按当前漏斗系数，达成 <strong id="backwardTargetDisplay">1000</strong> <span class="unit-text">双</span> 目标约需广告预算
-                <span style="display:inline-block;margin:0 4px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #ffd591;">
-                    <strong id="backwardRequiredBudget" style="font-size:18px;color:#D85A30;">—</strong>
-                </span>
+            <div class="funnel-path">
+                <table>
+                    <thead><tr><th style="width:22%">步骤</th><th style="width:25%">计算逻辑</th><th style="width:28%">数值</th><th style="width:25%">当前系数</th></tr></thead>
+                    <tbody>
+                        <tr class="highlight">
+                            <td class="step-name">目标成交</td>
+                            <td class="step-op">用户输入</td>
+                            <td class="step-val" id="bp_orders">— 次</td>
+                            <td class="step-note"></td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">所需咨询</td>
+                            <td class="step-op">目标 &divide; 成交率</td>
+                            <td class="step-val" id="bp_consultations">— 次</td>
+                            <td class="step-note" id="bp_convert_note">成交率 —%</td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">所需点击</td>
+                            <td class="step-op">咨询 &divide; 咨询率</td>
+                            <td class="step-val" id="bp_clicks">— 次</td>
+                            <td class="step-note" id="bp_consult_note">咨询率 —%</td>
+                        </tr>
+                        <tr>
+                            <td class="step-name">所需曝光</td>
+                            <td class="step-op">点击 &divide; CTR</td>
+                            <td class="step-val" id="bp_impressions">— 次</td>
+                            <td class="step-note" id="bp_ctr_note">CTR —%（免费）</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td class="step-name">所需预算</td>
+                            <td class="step-op">点击 &times; CPC</td>
+                            <td class="step-val" id="bp_budget">&yen;—</td>
+                            <td class="step-note" id="bp_cpc_note">CPC &yen;—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="note" style="background:#fff7e6;border-color:#ffd591;color:#ad6800;margin-top:4px;margin-bottom:12px;font-size:12px;">
                 <span style="display:inline-block;font-size:11px;color:#d46b08;background:#fff2e8;padding:2px 6px;border-radius:4px;">改目标单量或漏斗系数后实时变化</span>
             </div>
         </div>
@@ -1129,8 +1208,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.8';
-var BUILD_TIME = '2026-07-24 15:33';
+var APP_VERSION = 'v3.7.9';
+var BUILD_TIME = '2026-07-24 15:48';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2098,17 +2177,31 @@ function renderFunnel(r, p) {
     fpEl.style.color = funnelProfit >= 0 ? '#0F6E56' : '#ff4d4f';
     document.getElementById('funnelInventory').textContent = fmtInt(Math.max(0, unsoldInventory)) + ' ' + p.unit;
 
-    // 更新正推模式说明中的预算与预测成交单量
+    // 更新正推模式说明中的预算
     var autoBudgetEl = document.getElementById('funnelAutoBudget');
     if (autoBudgetEl) autoBudgetEl.textContent = fmt(r.adBudget);
-    var forwardOrdersEl = document.getElementById('forwardPredictedOrders');
-    if (forwardOrdersEl) forwardOrdersEl.textContent = fmtInt(Math.round(fr.orders));
 
-    // 更新反推模式说明中的目标单量与所需预算
-    var backwardTargetEl = document.getElementById('backwardTargetDisplay');
-    if (backwardTargetEl) backwardTargetEl.textContent = fmtInt(Math.round(fr.orders));
-    var backwardBudgetEl = document.getElementById('backwardRequiredBudget');
-    if (backwardBudgetEl) backwardBudgetEl.textContent = fmt(fr.budget);
+    // 更新正推分步表数值
+    var fpMap = { fp_budget: fmt(fr.budget), fp_clicks: fmtInt(Math.round(fr.clicks)) + ' 次',
+        fp_impressions: fmtInt(Math.round(fr.impressions)) + ' 次', fp_consultations: fmtInt(Math.round(fr.consultations)) + ' 次',
+        fp_orders: fmtInt(Math.round(fr.orders)) + ' 次' };
+    for (var k in fpMap) { var el = document.getElementById(k); if (el) el.textContent = fpMap[k]; }
+    // 正推系数说明
+    var fpCpcNote = document.getElementById('fp_cpc_note'); if (fpCpcNote) fpCpcNote.textContent = 'CPC ¥' + cpc;
+    var fpCtrNote = document.getElementById('fp_ctr_note'); if (fpCtrNote) fpCtrNote.textContent = 'CTR ' + val('funnelCTR') + '%（免费）';
+    var fpConsultNote = document.getElementById('fp_consult_note'); if (fpConsultNote) fpConsultNote.textContent = '咨询率 ' + val('funnelConsult') + '%';
+    var fpConvertNote = document.getElementById('fp_convert_note'); if (fpConvertNote) fpConvertNote.textContent = '成交率 ' + val('funnelConvert') + '%';
+
+    // 更新反推分步表数值
+    var bpMap = { bp_orders: fmtInt(Math.round(fr.orders)) + ' 次', bp_consultations: fmtInt(Math.round(fr.consultations)) + ' 次',
+        bp_clicks: fmtInt(Math.round(fr.clicks)) + ' 次', bp_impressions: fmtInt(Math.round(fr.impressions)) + ' 次',
+        bp_budget: fmt(fr.budget) };
+    for (var k in bpMap) { var el = document.getElementById(k); if (el) el.textContent = bpMap[k]; }
+    // 反推系数说明
+    var bpConvertNote = document.getElementById('bp_convert_note'); if (bpConvertNote) bpConvertNote.textContent = '成交率 ' + val('funnelConvert') + '%';
+    var bpConsultNote = document.getElementById('bp_consult_note'); if (bpConsultNote) bpConsultNote.textContent = '咨询率 ' + val('funnelConsult') + '%';
+    var bpCtrNote = document.getElementById('bp_ctr_note'); if (bpCtrNote) bpCtrNote.textContent = 'CTR ' + val('funnelCTR') + '%（免费）';
+    var bpCpcNote = document.getElementById('bp_cpc_note'); if (bpCpcNote) bpCpcNote.textContent = 'CPC ¥' + cpc;
 
     // 更新底部注释中的 ROAS
     var noteRatioEl = document.getElementById('noteRatio');
@@ -2788,8 +2881,8 @@ window.addEventListener('beforeunload', function (e) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.8';
-var BUILD_TIME = '2026-07-24 15:33';
+var APP_VERSION = 'v3.7.9';
+var BUILD_TIME = '2026-07-24 15:48';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
