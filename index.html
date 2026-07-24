@@ -1774,6 +1774,8 @@ function showView(v) {
     if (v === 'agency') {
         if (main) main.style.display = 'none';
         if (nav) nav.style.display = 'none';
+        var footer = document.querySelector('.footer-bar');
+        if (footer) footer.style.marginLeft = '0';
         if (agency) {
             agency.style.display = 'block';
             // 把当前 V3 的预算传递给代理页面（通过全局变量 + 注入到代理的 projects 列表）
@@ -1807,6 +1809,8 @@ function showView(v) {
         if (main) main.style.display = 'block';
         if (agency) agency.style.display = 'none';
         if (nav) nav.style.display = 'block';
+        var footer2 = document.querySelector('.footer-bar');
+        if (footer2) footer2.style.marginLeft = '244px';
     }
     try { localStorage.setItem(AGENCY_VIEW_KEY, v); } catch(e) {}
 }
