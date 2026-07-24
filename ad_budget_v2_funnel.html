@@ -1328,9 +1328,9 @@ function v3Apply() {
 
     if (rCPC > 0) document.getElementById('funnelCPC').value = rCPC.toFixed(1);
     if (rCTR > 0) document.getElementById('funnelCTR').value = rCTR.toFixed(1);
-    if (rCR > 0) document.getElementById('funnelConsult').value = rCR.toFixed(0);
-    if (rVR > 0) document.getElementById('funnelConvert').value = rVR.toFixed(0);
-    if (rRR > 0) document.getElementById('returnRate').value = rRR.toFixed(0);
+    if (rCR > 0) document.getElementById('funnelConsult').value = rCR.toFixed(1);
+    if (rVR > 0) document.getElementById('funnelConvert').value = rVR.toFixed(1);
+    if (rRR > 0) document.getElementById('returnRate').value = rRR.toFixed(1);
     document.getElementById('industryPreset').value = 'custom';
     document.getElementById('presetDesc').textContent = '已用 ' + data.length + ' 天真实数据校准';
     updateUI();

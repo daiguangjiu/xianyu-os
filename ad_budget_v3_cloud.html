@@ -1106,8 +1106,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.6.2';
-var BUILD_TIME = '2026-07-24 10:37';
+var APP_VERSION = 'v3.6.3';
+var BUILD_TIME = '2026-07-24 10:46';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2285,7 +2285,7 @@ function collectParams() {
         ratio: +document.getElementById('ratio').value || 2,
         platformFee: +document.getElementById('platformFee').value || 1.6,
         shipping: +document.getElementById('shipping').value || 5,
-        returnShip: +document.getElementById('returnShipping').value || 3,
+        returnShip: +document.getElementById('returnShipping').value || 1.2,
         dailyOrders: +document.getElementById('dailyOrders').value || 20,
         wuyoumai: document.getElementById('wuyoumai').checked,
         priceReduction: +document.getElementById('priceReduction').value || 5,
@@ -2540,9 +2540,9 @@ async function v3Apply() {
 
     if (rCPC > 0) document.getElementById('funnelCPC').value = rCPC.toFixed(1);
     if (rCTR > 0) document.getElementById('funnelCTR').value = rCTR.toFixed(1);
-    if (rCR > 0) document.getElementById('funnelConsult').value = rCR.toFixed(0);
-    if (rVR > 0) document.getElementById('funnelConvert').value = rVR.toFixed(0);
-    if (rRR > 0) document.getElementById('returnRate').value = rRR.toFixed(0);
+    if (rCR > 0) document.getElementById('funnelConsult').value = rCR.toFixed(1);
+    if (rVR > 0) document.getElementById('funnelConvert').value = rVR.toFixed(1);
+    if (rRR > 0) document.getElementById('returnRate').value = rRR.toFixed(1);
     document.getElementById('industryPreset').value = 'custom';
     document.getElementById('presetDesc').textContent = '已用 ' + data.length + ' 天真实数据校准';
     updateUI();
@@ -2613,8 +2613,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.6.2';
-var BUILD_TIME = '2026-07-24 10:37';
+var APP_VERSION = 'v3.6.3';
+var BUILD_TIME = '2026-07-24 10:46';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
