@@ -175,10 +175,12 @@
         }
 
         /* ===== V3 云端版 UI ===== */
-        .cloud-bar { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .cloud-bar { background: #fff; border-radius: 10px; padding: 14px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .cloud-bar.connected { border-left: 3px solid #52c41a; }
         .cloud-bar.disconnected { border-left: 3px solid #d9d9d9; }
-        .cloud-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .cloud-status { display: flex; flex-direction: column; gap: 10px; }
+        .cloud-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .cloud-row.bottom { align-items: center; }
         .cloud-status .left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .cloud-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
         .cloud-badge.online { background: #f6ffed; color: #52c41a; }
@@ -308,19 +310,25 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     <!-- ===== V3 云端栏 ===== -->
     <div class="cloud-bar disconnected" id="cloudBar">
         <div class="cloud-status">
-            <div class="left">
-                <span class="cloud-badge offline" id="cloudBadge"><span class="dot"></span><span id="cloudStatusText">未连接云端</span></span>
-                <div class="project-bar" id="projectBar" style="display:none;">
+            <!-- 第一行：账号信息 + 操作按钮 -->
+            <div class="cloud-row top">
+                <div class="left">
+                    <span class="cloud-badge offline" id="cloudBadge"><span class="dot"></span><span id="cloudStatusText">未连接云端</span></span>
+                </div>
+                <div class="cloud-actions">
+                    <button class="cloud-btn" id="authBtn" onclick="showAuthModal()">登录 / 注册</button>
+                    <button class="cloud-btn" id="importLocalBtn" onclick="importLocalData()" style="display:none;">导入本地数据</button>
+                    <button class="cloud-btn primary" id="syncBtn" onclick="syncNow()" style="display:none;">立即同步</button>
+                    <button class="cloud-btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">退出</button>
+                </div>
+            </div>
+            <!-- 第二行：项目选择 + 新建项目 + 同步状态 -->
+            <div class="cloud-row bottom" id="projectBar" style="display:none;">
+                <div class="project-bar">
                     <select id="projectSelect" onchange="switchProject()"></select>
                     <button class="cloud-btn" onclick="newProject()">+ 新建项目</button>
                 </div>
                 <span class="sync-indicator" id="syncIndicator"></span>
-            </div>
-            <div class="cloud-actions">
-                <button class="cloud-btn" id="authBtn" onclick="showAuthModal()">登录 / 注册</button>
-                <button class="cloud-btn" id="importLocalBtn" onclick="importLocalData()" style="display:none;">导入本地数据</button>
-                <button class="cloud-btn primary" id="syncBtn" onclick="syncNow()" style="display:none;">立即同步</button>
-                <button class="cloud-btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">退出</button>
             </div>
         </div>
     </div>
@@ -499,7 +507,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         <div id="forwardInput">
             <h3>正推模式：广告预算 → 预测成交单量 → 预测利润</h3>
             <div class="note" style="background:#f0f5ff;border-color:#adc6ff;color:#003a8c;margin-bottom:12px;font-size:13px;">
-                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量。预测成交单量：<strong id="forwardPredictedOrders" style="font-size:16px;color:#0F6E56;">—</strong> <span class="unit-text">双</span>。改漏斗系数（CPC/CTR/咨询率/成交率）后结果实时更新。
+                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量。
+                <span style="display:inline-block;margin-left:12px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #adc6ff;">
+                    预测成交单量：<strong id="forwardPredictedOrders" style="font-size:18px;color:#0F6E56;">—</strong> <span class="unit-text">双</span>
+                </span>
+                <span style="display:inline-block;margin-left:8px;font-size:11px;color:#1677ff;background:#e6f4ff;padding:2px 6px;border-radius:4px;">随 CPC/CTR/咨询率/成交率实时变化</span>
             </div>
         </div>
         <div id="backwardInput" style="display:none;">
@@ -509,7 +521,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <div class="input-group" style="display:flex;align-items:flex-end;"><button type="button" onclick="applyFunnelBudget()" style="padding:8px 16px;background:#0F6E56;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap;">应用到主模型 →</button></div>
             </div>
             <div class="note" style="background:#fff7e6;border-color:#ffd591;color:#ad6800;margin-top:8px;margin-bottom:12px;font-size:12px;">
-                按当前漏斗系数，达成 <strong id="backwardTargetDisplay">1000</strong> <span class="unit-text">双</span> 目标约需广告预算 <strong id="backwardRequiredBudget" style="font-size:16px;color:#D85A30;">—</strong>。改目标单量或漏斗系数后数字实时更新。
+                按当前漏斗系数，达成 <strong id="backwardTargetDisplay">1000</strong> <span class="unit-text">双</span> 目标约需广告预算
+                <span style="display:inline-block;margin:0 4px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #ffd591;">
+                    <strong id="backwardRequiredBudget" style="font-size:18px;color:#D85A30;">—</strong>
+                </span>
+                <span style="display:inline-block;font-size:11px;color:#d46b08;background:#fff2e8;padding:2px 6px;border-radius:4px;">改目标单量或漏斗系数后实时变化</span>
             </div>
         </div>
 
@@ -1108,8 +1124,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.5';
-var BUILD_TIME = '2026-07-24 14:18';
+var APP_VERSION = 'v3.7.6';
+var BUILD_TIME = '2026-07-24 14:37';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2000,6 +2016,8 @@ function applyPreset() {
     updateUI();
 }
 
+function onPresetChange() { applyPreset(); scheduleSaveProject(); }
+
 // ========== 流量漏斗 V2 ==========
 var funnelMode = 'forward';
 
@@ -2396,6 +2414,15 @@ function collectParams() {
     };
 }
 function loadProjectParams(p) {
+    // 取消任何待执行的自动保存，避免加载新项目后旧保存覆盖数据库
+    clearTimeout(saveTimer);
+
+    var preset = document.getElementById('industryPreset');
+    // 加载参数前临时解绑行业预设 change 事件，避免设置 value 时意外触发 applyPreset
+    if (preset) {
+        preset.removeEventListener('change', onPresetChange);
+    }
+
     if (p.unit != null && document.getElementById('unit')) { document.getElementById('unit').value = p.unit; updateUnitLabels(); }
     if (p.quantity != null) document.getElementById('quantity').value = p.quantity;
     if (p.price != null) document.getElementById('price').value = p.price;
@@ -2413,13 +2440,20 @@ function loadProjectParams(p) {
     if (p.funnel_ctr != null) document.getElementById('funnelCTR').value = p.funnel_ctr;
     if (p.funnel_consult != null) document.getElementById('funnelConsult').value = p.funnel_consult;
     if (p.funnel_convert != null) document.getElementById('funnelConvert').value = p.funnel_convert;
-    if (p.industry) { document.getElementById('industryPreset').value = p.industry; updatePresetDesc(); }
+    if (p.industry && preset) { preset.value = p.industry; updatePresetDesc(); }
+
+    // 恢复行业预设 change 事件
+    if (preset) {
+        preset.addEventListener('change', onPresetChange);
+    }
+
     updateUI();
 }
 
 // 立即保存当前项目参数到云端（不防抖，直接执行）
 async function flushSaveProject() {
-    if (!sb || !sbUser || !currentProject) return;
+    if (!sb || !sbUser || !currentProject || isSaving) return;
+    isSaving = true;
     var params = collectParams();
     var updateData = {
         industry: params.industry,
@@ -2441,18 +2475,23 @@ async function flushSaveProject() {
         Object.keys(updateData).forEach(function (k) {
             if (currentProject && k in currentProject) currentProject[k] = updateData[k];
         });
+        hasUnsavedChanges = false;
         setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
     }
+    isSaving = false;
 }
 
-// 自动保存参数（防抖，800ms 后调用 flushSaveProject）
+// 自动保存参数（防抖，300ms 后调用 flushSaveProject，更快落库）
 var saveTimer = null;
+var isSaving = false;
+var hasUnsavedChanges = false;
 function scheduleSaveProject() {
     if (!sb || !sbUser || !currentProject) return;
+    hasUnsavedChanges = true;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
         flushSaveProject();
-    }, 800);
+    }, 300);
 }
 
 // ----- 同步状态 -----
@@ -2705,7 +2744,12 @@ document.querySelectorAll('input').forEach(function (el) {
     el.addEventListener('input', function() { updateUI(); scheduleSaveProject(); });
     if (el.type === 'checkbox') el.addEventListener('change', function() { updateUI(); scheduleSaveProject(); });
 });
-document.getElementById('industryPreset').addEventListener('change', function() { applyPreset(); scheduleSaveProject(); });
+// 漏斗系数与目标单量显式绑定，确保正推/反推数字实时更新
+['funnelCPC','funnelCTR','funnelConsult','funnelConvert','funnelTargetInput'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', function () { updateUI(); scheduleSaveProject(); });
+});
+document.getElementById('industryPreset').addEventListener('change', onPresetChange);
 document.getElementById('unit').addEventListener('input', function() { localStorage.setItem('xianyu_unit', this.value); });
 var savedUnit = localStorage.getItem('xianyu_unit');
 if (savedUnit) document.getElementById('unit').value = savedUnit;
@@ -2714,6 +2758,14 @@ updateUI();
 v3Render();
 initCloud(function (err) {
     if (err) console.warn('Cloud init:', err);
+});
+
+// 页面关闭前如有未保存修改，提醒用户
+window.addEventListener('beforeunload', function (e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
 });
 </script>
 
@@ -2726,8 +2778,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.5';
-var BUILD_TIME = '2026-07-24 14:18';
+var APP_VERSION = 'v3.7.6';
+var BUILD_TIME = '2026-07-24 14:37';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
