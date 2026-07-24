@@ -157,9 +157,9 @@
             <div class="input-group"><label>产品成本/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="productCost" value="35" min="0" step="1"></div></div>
             <div class="input-group"><label>退货率</label><div class="input-wrapper"><input type="number" id="returnRate" value="15" min="0" max="100" step="1"><span class="suffix">%</span></div></div>
             <div class="input-group"><label>GSV:成本比</label><div class="input-wrapper"><span class="prefix">1:</span><input type="number" id="ratio" value="2" min="1" step="0.1"></div></div>
-            <div class="input-group"><label>平台佣金</label><div class="input-wrapper"><input type="number" id="platformFee" value="1.6" min="0" max="100" step="0.5"><span class="suffix">%</span></div></div>
-            <div class="input-group"><label>发货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="shipping" value="5" min="0" step="0.5"></div></div>
-            <div class="input-group"><label>退货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="returnShipping" value="3" min="0" step="0.5"></div></div>
+            <div class="input-group"><label>平台佣金</label><div class="input-wrapper"><input type="number" id="platformFee" value="1.6" min="0" max="100" step="0.1"><span class="suffix">%</span></div></div>
+            <div class="input-group"><label>发货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="shipping" value="5" min="0" step="0.1"></div></div>
+            <div class="input-group"><label>退货运费/单</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="returnShipping" value="1.2" min="0" step="0.1"></div></div>
             <div class="input-group"><label>日均出单</label><div class="input-wrapper"><input type="number" id="dailyOrders" value="20" min="1" step="1"><span class="suffix">单/天</span></div></div>
         </div>
 
@@ -572,6 +572,8 @@ function fmt(n, d) { if (d === undefined) d = 2; if (!isFinite(n)) return '—';
 function fmt0(n) { return fmt(n, 0); }
 function fmtInt(n) { return n.toLocaleString('zh-CN', { maximumFractionDigits: 0 }); }
 function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+function fmtMoney(n) { n = Math.round(n * 100) / 100; return '¥' + n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+function fmtNum(n) { n = Math.round(n * 100) / 100; return n.toString(); }
 function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
 function sign(n) { return n >= 0 ? '+' : ''; }
 
@@ -688,27 +690,27 @@ function updateUI() {
     // Sales table
     var salesHtml = '';
     if (wmEnabled) {
-        salesHtml += '<tr><td>原价/双</td><td class="num">—</td><td class="num">' + fmt0(p.price) + '</td><td class="num">—</td></tr>';
-        salesHtml += '<tr class="wm-row"><td>无忧卖降价</td><td class="num">—</td><td class="num loss">-' + fmt0(r.priceReduction) + '</td><td class="num loss">-' + fmt(r.totalReduction) + '</td></tr>';
-        salesHtml += '<tr><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num"><strong>' + fmt0(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt(r.grossGSV) + '</strong></td></tr>';
+        salesHtml += '<tr><td>原价/双</td><td class="num">—</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">—</td></tr>';
+        salesHtml += '<tr class="wm-row"><td>无忧卖降价</td><td class="num">—</td><td class="num loss">-' + fmtMoney(r.priceReduction) + '</td><td class="num loss">-' + fmt(r.totalReduction) + '</td></tr>';
+        salesHtml += '<tr><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num"><strong>' + fmtMoney(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt(r.grossGSV) + '</strong></td></tr>';
     } else {
-        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmt0(p.price) + '</td><td class="num">' + fmt(r.grossGSV) + '</td></tr>';
+        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">' + fmt(r.grossGSV) + '</td></tr>';
     }
-    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' 双</td><td class="num">' + fmt0(r.actualPrice) + '</td><td class="num loss">-' + fmt(r.returnRefund) + '</td></tr>';
+    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' 双</td><td class="num">' + fmtMoney(r.actualPrice) + '</td><td class="num loss">-' + fmt(r.returnRefund) + '</td></tr>';
     salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>净销售（有效订单）</strong></td><td class="num">' + fmtInt(r.validOrders) + ' 双</td><td class="num">—</td><td class="num profit">' + fmt(r.netGSV) + '</td></tr>';
     document.getElementById('salesBody').innerHTML = salesHtml;
 
     // Cost table
     var costRows = [
-        ['产品成本', fmtInt(r.validOrders) + '双 × ' + fmt0(p.productCost) + '（售出量）', r.totalProductCost]
+        ['产品成本', fmtInt(r.validOrders) + '双 × ' + fmtMoney(p.productCost) + '（售出量）', r.totalProductCost]
     ];
     if (wmEnabled) {
         costRows.push(['无忧卖佣金', fmtPct(p.wmCommRate) + ' × 全部成交GSV', r.wmCommission]);
     } else {
         costRows.push(['平台佣金', fmtPct(p.platformFeeRate) + ' × 全部成交GSV', r.platformFee]);
     }
-    costRows.push(['发货运费', fmtInt(p.quantity) + '单 × ' + fmt0(p.shipping), r.totalShipping]);
-    costRows.push(['退货运费', fmtInt(r.returnCount) + '单 × ' + fmt0(p.returnShipping), r.totalReturnShip]);
+    costRows.push(['发货运费', fmtInt(p.quantity) + '单 × ' + fmtMoney(p.shipping), r.totalShipping]);
+    costRows.push(['退货运费', fmtInt(r.returnCount) + '单 × ' + fmtMoney(p.returnShipping), r.totalReturnShip]);
     costRows.push(['广告预算', '毛GSV ÷ ' + p.ratio, r.adBudget]);
 
     var costHtml = '';
@@ -724,7 +726,7 @@ function updateUI() {
     if (wmEnabled) {
         var diff = r.profit - r.noWmProfit;
         var cmpRows = [
-            ['实际售价/双', fmt0(p.price), fmt0(r.actualPrice), '<span class="loss">' + sign(-r.priceReduction) + fmt0(r.priceReduction) + '</span>'],
+            ['实际售价/双', fmtMoney(p.price), fmtMoney(r.actualPrice), '<span class="loss">' + sign(-r.priceReduction) + fmtMoney(r.priceReduction) + '</span>'],
             ['毛 GSV', fmt(r.noWmGrossGSV), fmt(r.grossGSV), '<span class="loss">' + sign(r.grossGSV - r.noWmGrossGSV) + fmt(r.grossGSV - r.noWmGrossGSV) + '</span>'],
             ['净 GSV', fmt(r.noWmNetGSV), fmt(r.netGSV), '<span class="loss">' + sign(r.netGSV - r.noWmNetGSV) + fmt(r.netGSV - r.noWmNetGSV) + '</span>'],
             ['平台佣金', fmt(r.noWmPlatformFee), r.platformFee > 0 ? fmt(r.platformFee) : '<span style="color:#bfbfbf;">不收取</span>', '<span class="profit">-' + fmt(r.noWmPlatformFee) + '</span>'],
@@ -838,19 +840,19 @@ function updateUI() {
         var actPrice, g, rf, n, ad, comm, commLabel, tc, profit, prr, diff, isC;
         if (rd === 0) {
             actPrice = p.price; n = baseN; ad = baseAd; comm = baseComm;
-            commLabel = '平台' + (p.platformFeeRate * 100).toFixed(0) + '%';
+            commLabel = '平台' + fmtNum(p.platformFeeRate * 100) + '%';
             tc = baseTC; profit = baseProfit; prr = n > 0 ? profit / n : 0; diff = 0;
             isC = !wmEnabled;
-            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td><strong>不参与</strong>' + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmt0(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#8c8c8c;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num" style="color:#bfbfbf;">基准</td></tr>';
+            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td><strong>不参与</strong>' + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmtMoney(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#8c8c8c;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num" style="color:#bfbfbf;">基准</td></tr>';
         } else {
             actPrice = p.price - rd;
             g = p.quantity * actPrice; rf = r.returnCount * actPrice; n = g - rf;
             ad = g / p.ratio; comm = g * wmRate;
-            commLabel = '无忧卖' + (wmRate * 100).toFixed(0) + '%';
+            commLabel = '无忧卖' + fmtNum(wmRate * 100) + '%';
             tc = r.validOrders * p.productCost + comm + p.quantity * p.shipping + r.returnCount * p.returnShipping + ad;
             profit = n - tc; prr = n > 0 ? profit / n : 0; diff = profit - baseProfit;
             isC = wmEnabled && Math.abs(rd - r.priceReduction) < 0.01;
-            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + (isC ? '<strong>¥' + rd + '</strong>' : '¥' + rd) + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmt0(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#fa8c16;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num ' + (diff >= 0 ? 'profit' : 'loss') + '">' + (diff >= 0 ? '+' : '') + fmt(diff) + '</td></tr>';
+            pH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + (isC ? '<strong>¥' + rd + '</strong>' : '¥' + rd) + (isC ? ' ← 当前' : '') + '</td><td class="num">' + fmtMoney(actPrice) + '</td><td class="num">' + fmt(n) + '</td><td class="num" style="font-size:13px;">' + fmt(comm) + '<br><span style="color:#fa8c16;font-size:11px;">' + commLabel + '</span></td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num ' + (diff >= 0 ? 'profit' : 'loss') + '">' + (diff >= 0 ? '+' : '') + fmt(diff) + '</td></tr>';
         }
     });
     document.getElementById('priceSensBody').innerHTML = pH;
@@ -892,7 +894,7 @@ function updateUI() {
         var prr = r.netGSV > 0 ? profit / r.netGSV : 0;
         var be = (r.netGSV - nonAd) > 0 ? r.grossGSV / (r.netGSV - nonAd) : Infinity;
         var isC = Math.abs(pc - p.productCost) < 0.01;
-        cH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmt0(pc) + (isC ? ' ←' : '') + '</td><td class="num">' + fmt(tpc) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num">' + (isFinite(be) ? be.toFixed(2) : '—') + '</td></tr>';
+        cH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmtNum(pc) + (isC ? ' ←' : '') + '</td><td class="num">' + fmt(tpc) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td><td class="num">' + (isFinite(be) ? be.toFixed(2) : '—') + '</td></tr>';
     });
     document.getElementById('costSensBody').innerHTML = cH;
 
