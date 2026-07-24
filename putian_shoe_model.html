@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>莆田鞋代理分销模型 · 盈亏分析</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d29;
+  --card2: #22263a;
+  --border: #2d3148;
+  --text: #e4e6ef;
+  --text2: #9ca3b8;
+  --accent: #60a5fa;
+  --green: #4ade80;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --orange: #fb923c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+h1 { font-size: 1.5em; margin-bottom: 4px; }
+h2 { font-size: 1.15em; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1em; margin-bottom: 8px; color: var(--accent); }
+.subtitle { color: var(--text2); font-size: 0.85em; margin-bottom: 20px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.flow-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.flow-node {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.flow-node.you { background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6; }
+.flow-node.op { background: #1e3b32; color: #86efac; border: 1px solid #22c55e; }
+.flow-node.plat { background: #3b2f1e; color: #fcd34d; border: 1px solid #f59e0b; }
+.flow-node.buyer { background: #3b1e3b; color: #d8b4fe; border: 1px solid #a855f7; }
+.flow-arrow {
+  font-size: 0.75em;
+  color: var(--text2);
+  white-space: nowrap;
+}
+.flow-arrow .amt { color: var(--yellow); font-weight: 600; }
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.param-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.param-item label { font-size: 0.78em; color: var(--text2); }
+.param-item input {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 0.9em;
+  width: 100%;
+}
+.param-item input:focus { outline: none; border-color: var(--accent); }
+.param-group-title {
+  font-size: 0.82em;
+  color: var(--accent);
+  margin: 12px 0 8px;
+  font-weight: 600;
+}
+.param-group-title:first-child { margin-top: 0; }
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.metric-box {
+  background: var(--card2);
+  border-radius: 8px;
+  padding: 14px;
+  border-left: 3px solid var(--accent);
+}
+.metric-box.warn { border-left-color: var(--red); }
+.metric-box.ok { border-left-color: var(--green); }
+.metric-box.info { border-left-color: var(--yellow); }
+.metric-label { font-size: 0.78em; color: var(--text2); margin-bottom: 4px; }
+.metric-value { font-size: 1.3em; font-weight: 700; }
+.metric-value.green { color: var(--green); }
+.metric-value.red { color: var(--red); }
+.metric-value.yellow { color: var(--yellow); }
+.metric-note { font-size: 0.72em; color: var(--text2); margin-top: 2px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82em;
+}
+th, td {
+  padding: 8px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  color: var(--text2);
+  font-weight: 600;
+  font-size: 0.9em;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 1;
+}
+td.profit { color: var(--green); font-weight: 600; }
+td.loss { color: var(--red); font-weight: 600; }
+td.breakeven { color: var(--yellow); font-weight: 600; }
+th.op-col { color: #86efac; }
+th.user-col { color: #93c5fd; }
+.chart-container {
+  background: var(--card2);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+.findings-list {
+  list-style: none;
+  padding: 0;
+}
+.findings-list li {
+  padding: 8px 0 8px 24px;
+  position: relative;
+  font-size: 0.88em;
+  line-height: 1.7;
+  border-bottom: 1px solid var(--border);
+}
+.findings-list li:last-child { border-bottom: none; }
+.findings-list li::before {
+  content: attr(data-num);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.75em;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.findings-list li.warn::before { background: var(--red); }
+.findings-list li.ok::before { background: var(--green); }
+.findings-list li.info::before { background: var(--yellow); }
+.tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.78em;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.tag.red { background: #3b1414; color: var(--red); }
+.tag.green { background: #142b14; color: var(--green); }
+.tag.yellow { background: #2b2414; color: var(--yellow); }
+.formula-box {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.78em;
+  color: var(--text2);
+  margin: 8px 0;
+  line-height: 1.8;
+  overflow-x: auto;
+}
+.formula-box .var { color: var(--accent); }
+.formula-box .num { color: var(--yellow); }
+.formula-box .result { color: var(--green); font-weight: bold; }
+.section-desc { font-size: 0.82em; color: var(--text2); margin-bottom: 10px; }
+.highlight-box {
+  background: #1e1b2e;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin: 10px 0;
+}
+.highlight-box h4 { color: var(--yellow); margin-bottom: 6px; font-size: 0.9em; }
+.highlight-box p { font-size: 0.82em; color: var(--text2); }
+@media (max-width: 640px) {
+  .param-grid { grid-template-columns: 1fr 1fr; }
+  table { font-size: 0.75em; }
+  th, td { padding: 6px 3px; }
+}
+</style>
+</head>
+<body>
+
+<h1>莆田鞋代理分销模型 · 盈亏分析</h1>
+<p class="subtitle">独立测算工具 · 不影响V3决策系统 · 参数可调实时计算</p>
+
+<!-- ===== 资金流向 ===== -->
+<h2>一、资金流向模型</h2>
+<div class="card">
+<div class="flow-box">
+  <span class="flow-node op">下游运营商</span>
+  <span class="flow-arrow">购鞋款 <span class="amt">50元/双</span> →</span>
+  <span class="flow-node you">总运营(你)</span>
+  <span class="flow-arrow">→ <span class="amt">35%返点</span> ←</span>
+  <span class="flow-node plat">广告平台</span>
+</div>
+<div class="flow-box">
+  <span class="flow-node op">下游运营商</span>
+  <span class="flow-arrow">广告充值 <span class="amt">P÷3元/双</span> →</span>
+  <span class="flow-node you">总运营(你)</span>
+  <span class="flow-arrow">→ 广告费 →</span>
+  <span class="flow-node plat">广告平台</span>
+</div>
+<div class="flow-box">
+  <span class="flow-node you">总运营(你)</span>
+  <span class="flow-arrow">→ 广告补贴 <span class="amt">10元/双</span> →</span>
+  <span class="flow-node op">下游运营商</span>
+</div>
+<div class="flow-box">
+  <span class="flow-node buyer">消费者</span>
+  <span class="flow-arrow">→ 购鞋款 <span class="amt">P元/双</span> →</span>
+  <span class="flow-node op">下游运营商</span>
+  <span class="flow-arrow">（定价差额 P-50 全归运营商）</span>
+</div>
+</div>
+
+<!-- ===== 参数设置 ===== -->
+<h2>二、参数设置（可调）</h2>
+<div class="card">
+  <div class="param-group-title">总运营参数（你的成本和利润结构）</div>
+  <div class="param-grid">
+    <div class="param-item">
+      <label>你的鞋子采购成本（元/双）</label>
+      <input type="number" id="shoeCost" value="35" min="0" max="100" step="1">
+    </div>
+    <div class="param-item">
+      <label>给下游的鞋价（元/双）</label>
+      <input type="number" id="shoePrice" value="50" min="0" max="200" step="1">
+    </div>
+    <div class="param-item">
+      <label>广告返点率（%）</label>
+      <input type="number" id="rebateRate" value="35" min="0" max="100" step="1">
+    </div>
+    <div class="param-item">
+      <label>广告补贴（元/双·成交）</label>
+      <input type="number" id="subsidy" value="10" min="0" max="50" step="0.5">
+    </div>
+    <div class="param-item">
+      <label>承诺 ROAS（1:X 的 X）</label>
+      <input type="number" id="roas" value="3" min="1" max="20" step="0.5">
+    </div>
+  </div>
+
+  <div class="param-group-title">下游参数（运营商的运营环境）</div>
+  <div class="param-grid">
+    <div class="param-item">
+      <label>最低售价（元/双）</label>
+      <input type="number" id="minPrice" value="70" min="0" max="500" step="1">
+    </div>
+    <div class="param-item">
+      <label>退货率（%）</label>
+      <input type="number" id="returnRate" value="15" min="0" max="80" step="1">
+    </div>
+    <div class="param-item">
+      <label>平台佣金率（%）</label>
+      <input type="number" id="feeRate" value="1.6" min="0" max="10" step="0.1">
+    </div>
+    <div class="param-item">
+      <label>出库运费（元/双，0=买家付）</label>
+      <input type="number" id="outShip" value="0" min="0" max="30" step="1">
+    </div>
+    <div class="param-item">
+      <label>退货运费（元/双，0=买家付）</label>
+      <input type="number" id="returnShip" value="0" min="0" max="30" step="1">
+    </div>
+  </div>
+</div>
+
+<!-- ===== 核心公式 ===== -->
+<h2>三、核心计算公式</h2>
+<div class="card">
+  <p class="section-desc">考虑退货后，每 1 个有效订单需要卖出 1/(1-退货率) 双（部分会被退回，鞋子可再售）</p>
+  <div class="formula-box">
+<span class="var">t</span> = 1 / (1 - 退货率) <span class="num">  // 退货15%时 t=1.176</span>
+
+<span class="var">运营商利润/有效单</span> = 售价 - 鞋价 - (售价÷ROAS)×t + 补贴×t - 售价×佣金率×t - 退货运费×(t-1) - 出库运费×t
+
+<span class="var">总运营利润/有效单</span> = (鞋价-采购成本)×t + (售价÷ROAS)×t×返点率 - 补贴×t
+
+<span class="num">  // 广告返点 = 广告费×35%，广告补贴 = 10元×t（每笔成交都给）</span>
+  </div>
+  <div class="highlight-box">
+    <h4>关键结构性问题</h4>
+    <p>你的广告利润 = (P÷3) × 35% = P × 11.67%。当 P=70 时，广告返点仅 8.17元，但你要给 10元补贴。<br>
+    <strong style="color:var(--red)">广告返点 < 广告补贴 → 广告侧每单亏 1.83元，必须靠鞋价差额覆盖。</strong></p>
+  </div>
+</div>
+
+<!-- ===== 盈亏平衡 ===== -->
+<h2>四、盈亏平衡分析</h2>
+<div class="card">
+  <div class="metrics-row" id="breakevenMetrics">
+    <!-- JS填充 -->
+  </div>
+</div>
+
+<!-- ===== 多档位测算表 ===== -->
+<h2>五、多档位利润测算表</h2>
+<div class="card">
+  <p class="section-desc">每个售价点的利润，已含退货率折算（按有效订单口径）</p>
+  <div style="overflow-x:auto;">
+    <table id="profitTable">
+      <thead>
+        <tr>
+          <th rowspan="2">售价(元)</th>
+          <th colspan="3" class="op-col">下游运营商</th>
+          <th colspan="4" class="user-col">总运营(你) — 不同采购成本</th>
+        </tr>
+        <tr>
+          <th class="op-col">毛利(未扣广告)</th>
+          <th class="op-col">广告费</th>
+          <th class="op-col">净利润/单</th>
+          <th class="user-col">S=30</th>
+          <th class="user-col">S=35</th>
+          <th class="user-col">S=40</th>
+          <th class="user-col">S=50</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== 利润曲线 ===== -->
+<h2>六、利润曲线图</h2>
+<div class="card">
+  <div class="chart-container" id="chartContainer">
+    <!-- SVG图表 JS生成 -->
+  </div>
+</div>
+
+<!-- ===== 关键发现 ===== -->
+<h2>七、关键发现与推荐策略</h2>
+<div class="card">
+  <ul class="findings-list" id="findingsList">
+    <!-- JS填充 -->
+  </ul>
+</div>
+
+<div class="card">
+  <h3 style="margin-bottom:10px;">推荐方案对比</h3>
+  <div style="overflow-x:auto;">
+    <table id="strategyTable" style="font-size:0.8em;">
+      <thead>
+        <tr>
+          <th>方案</th>
+          <th>最低售价</th>
+          <th>广告补贴</th>
+          <th>ROAS</th>
+          <th>运营商利润/单<br>(P=最低价)</th>
+          <th>你的利润/单<br>(S=35,P=最低价)</th>
+          <th>评价</th>
+        </tr>
+      </thead>
+      <tbody id="strategyBody">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p style="text-align:center;color:var(--text2);font-size:0.75em;margin-top:20px;">
+  莆田鞋代理分销模型分析 · 独立工具 · 不影响V3决策系统
+</p>
+
+<script>
+// ===== 参数读取 =====
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+// ===== 核心计算 =====
+function calcOperator(P, params) {
+  var t = 1 / (1 - params.returnRate / 100);
+  var adSpend = (P / params.roas) * t;
+  var subsidy = params.subsidy * t;
+  var platformFee = P * (params.feeRate / 100) * t;
+  var returnShipCost = params.returnShip * (t - 1);
+  var outShipCost = params.outShip * t;
+  var grossMargin = P - params.shoePrice;  // 定价差额
+  var netProfit = grossMargin - adSpend + subsidy - platformFee - returnShipCost - outShipCost;
+  return { grossMargin: grossMargin, adSpend: adSpend, subsidy: subsidy, netProfit: netProfit };
+}
+
+function calcUser(P, S, params) {
+  var t = 1 / (1 - params.returnRate / 100);
+  var shoeMargin = (params.shoePrice - S) * t;
+  var adRevenue = (P / params.roas) * t * (params.rebateRate / 100);
+  var subsidyCost = params.subsidy * t;
+  var netProfit = shoeMargin + adRevenue - subsidyCost;
+  return { shoeMargin: shoeMargin, adRevenue: adRevenue, subsidyCost: subsidyCost, netProfit: netProfit };
+}
+
+// ===== 盈亏平衡 =====
+function findBreakeven(calcFunc, params, extra) {
+  for (var P = 50; P <= 300; P += 0.1) {
+    var r = calcFunc(P, extra || params, params);
+    if (r.netProfit >= 0) return Math.round(P * 10) / 10;
+  }
+  return -1;
+}
+
+function findOpBreakeven(params) {
+  for (var P = 50; P <= 300; P += 0.1) {
+    var r = calcOperator(P, params);
+    if (r.netProfit >= 0) return Math.round(P * 10) / 10;
+  }
+  return -1;
+}
+
+// ===== 渲染 =====
+function render() {
+  var params = {
+    shoeCost: val('shoeCost'),
+    shoePrice: val('shoePrice'),
+    rebateRate: val('rebateRate'),
+    subsidy: val('subsidy'),
+    roas: val('roas'),
+    minPrice: val('minPrice'),
+    returnRate: val('returnRate'),
+    feeRate: val('feeRate'),
+    outShip: val('outShip'),
+    returnShip: val('returnShip')
+  };
+
+  // === 盈亏平衡 ===
+  var opBE = findOpBreakeven(params);
+  var userBE_S = findBreakeven(function(P, S, p) { return calcUser(P, S, p); }, params, params.shoeCost);
+  var userBE_S35 = findBreakeven(function(P, S, p) { return calcUser(P, 35, p); }, params);
+  var userBE_S50 = findBreakeven(function(P, S, p) { return calcUser(P, 50, p); }, params);
+
+  var opAtMin = calcOperator(params.minPrice, params);
+  var userAtMin = calcUser(params.minPrice, params.shoeCost, params);
+
+  var html = '';
+  html += '<div class="metric-box ' + (opBE <= params.minPrice ? 'ok' : 'warn') + '">';
+  html += '<div class="metric-label">下游运营商盈亏平衡售价</div>';
+  html += '<div class="metric-value ' + (opBE <= params.minPrice ? 'green' : 'red') + '">' + (opBE > 0 ? opBE + '元' : '>300') + '</div>';
+  html += '<div class="metric-note">当前最低价' + params.minPrice + '元时，运营商' + (opBE <= params.minPrice ? '可盈利' : '会亏损') + '</div>';
+  html += '</div>';
+
+  html += '<div class="metric-box ' + (userBE_S <= params.minPrice ? 'ok' : 'warn') + '">';
+  html += '<div class="metric-label">你的盈亏平衡售价（采购成本=' + params.shoeCost + '元）</div>';
+  html += '<div class="metric-value ' + (userBE_S <= params.minPrice ? 'green' : 'red') + '">' + (userBE_S > 0 ? userBE_S + '元' : '>300') + '</div>';
+  html += '<div class="metric-note">当前最低价' + params.minPrice + '元时，你' + (userBE_S <= params.minPrice ? '可盈利' : '会亏损') + '</div>';
+  html += '</div>';
+
+  // 广告侧分析
+  var adRebatePerPair = (params.minPrice / params.roas) * (params.rebateRate / 100);
+  var adGap = adRebatePerPair - params.subsidy;
+  html += '<div class="metric-box ' + (adGap >= 0 ? 'ok' : 'warn') + '">';
+  html += '<div class="metric-label">广告侧盈亏（最低价时）</div>';
+  html += '<div class="metric-value ' + (adGap >= 0 ? 'green' : 'red') + '">' + (adGap >= 0 ? '+' : '') + adGap.toFixed(2) + '元</div>';
+  html += '<div class="metric-note">返点' + adRebatePerPair.toFixed(2) + '元 − 补贴' + params.subsidy + '元 = ' + (adGap >= 0 ? '盈余' : '缺口') + '</div>';
+  html += '</div>';
+
+  // 当前价格下各方利润
+  html += '<div class="metric-box info">';
+  html += '<div class="metric-label">当前最低价' + params.minPrice + '元时各方利润</div>';
+  html += '<div class="metric-value ' + (opAtMin.netProfit > 0 ? 'green' : 'red') + '">' + (opAtMin.netProfit > 0 ? '+' : '') + opAtMin.netProfit.toFixed(2) + '元</div>';
+  html += '<div class="metric-note">运营商: ' + (opAtMin.netProfit > 0 ? '+' : '') + opAtMin.netProfit.toFixed(2) + ' | 你(S=' + params.shoeCost + '): ' + (userAtMin.netProfit > 0 ? '+' : '') + userAtMin.netProfit.toFixed(2) + '</div>';
+  html += '</div>';
+
+  document.getElementById('breakevenMetrics').innerHTML = html;
+
+  // === 多档位表格 ===
+  var prices = [];
+  var base = params.minPrice;
+  for (var i = 0; i <= 8; i++) prices.push(base + i * 10);
+  // 确保包含盈亏平衡点附近
+  if (opBE > 0 && prices.indexOf(opBE) === -1 && opBE < base + 80) {
+    prices.push(Math.round(opBE));
+    prices.sort(function(a, b) { return a - b; });
+  }
+
+  var shoeCosts = [30, 35, 40, 50];
+  var tbody = '';
+  prices.forEach(function(P) {
+    var op = calcOperator(P, params);
+    var rowClass = '';
+    if (op.netProfit < 0) rowClass = 'loss';
+    else if (Math.abs(op.netProfit) < 2) rowClass = 'breakeven';
+    else rowClass = 'profit';
+
+    tbody += '<tr>';
+    tbody += '<td><strong>' + P + '</strong></td>';
+    tbody += '<td>+' + op.grossMargin.toFixed(1) + '</td>';
+    tbody += '<td>-' + op.adSpend.toFixed(1) + '</td>';
+    tbody += '<td class="' + rowClass + '">' + (op.netProfit >= 0 ? '+' : '') + op.netProfit.toFixed(2) + '</td>';
+
+    shoeCosts.forEach(function(S) {
+      var u = calcUser(P, S, params);
+      var cls = u.netProfit < 0 ? 'loss' : (Math.abs(u.netProfit) < 1 ? 'breakeven' : 'profit');
+      tbody += '<td class="' + cls + '">' + (u.netProfit >= 0 ? '+' : '') + u.netProfit.toFixed(2) + '</td>';
+    });
+
+    tbody += '</tr>';
+  });
+  document.getElementById('tableBody').innerHTML = tbody;
+
+  // === 利润曲线 ===
+  renderChart(params);
+
+  // === 关键发现 ===
+  renderFindings(params, opBE, userBE_S, adGap, opAtMin, userAtMin);
+
+  // === 推荐方案 ===
+  renderStrategies(params);
+}
+
+// ===== 图表 =====
+function renderChart(params) {
+  var w = 760, h = 360, pad = 50;
+  var prices = [];
+  for (var P = 60; P <= 150; P += 5) prices.push(P);
+
+  var allProfits = [];
+  var opData = prices.map(function(P) { return calcOperator(P, params).netProfit; });
+  var userS30 = prices.map(function(P) { return calcUser(P, 30, params).netProfit; });
+  var userS35 = prices.map(function(P) { return calcUser(P, 35, params).netProfit; });
+  var userS50 = prices.map(function(P) { return calcUser(P, 50, params).netProfit; });
+
+  allProfits = opData.concat(userS30, userS35, userS50);
+  var maxV = Math.max.apply(null, allProfits.concat([0]));
+  var minV = Math.min.apply(null, allProfits.concat([0]));
+  var range = maxV - minV || 1;
+  maxV += range * 0.1;
+  minV -= range * 0.1;
+  range = maxV - minV;
+
+  var xScale = function(P) { return pad + (P - 60) / 90 * (w - pad - 20); };
+  var yScale = function(v) { return h - pad - (v - minV) / range * (h - pad - 30); };
+
+  var svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="max-width:100%;">';
+
+  // 网格
+  var ySteps = 5;
+  for (var i = 0; i <= ySteps; i++) {
+    var v = minV + range * i / ySteps;
+    var y = yScale(v);
+    svg += '<line x1="' + pad + '" y1="' + y + '" x2="' + (w - 20) + '" y2="' + y + '" stroke="#2d3148" stroke-width="0.5"/>';
+    svg += '<text x="' + (pad - 6) + '" y="' + (y + 3) + '" fill="#9ca3b8" font-size="9" text-anchor="end">' + v.toFixed(0) + '</text>';
+  }
+
+  // 零线
+  if (minV < 0 && maxV > 0) {
+    var y0 = yScale(0);
+    svg += '<line x1="' + pad + '" y1="' + y0 + '" x2="' + (w - 20) + '" y2="' + y0 + '" stroke="#4ade80" stroke-width="0.8" stroke-dasharray="4,3"/>';
+    svg += '<text x="' + (w - 20) + '" y="' + (y0 - 4) + '" fill="#4ade80" font-size="9" text-anchor="end">盈亏线</text>';
+  }
+
+  // X轴标签
+  for (var px = 60; px <= 150; px += 15) {
+    var x = xScale(px);
+    svg += '<line x1="' + x + '" y1="' + (h - pad) + '" x2="' + x + '" y2="' + (h - pad + 4) + '" stroke="#9ca3b8" stroke-width="0.5"/>';
+    svg += '<text x="' + x + '" y="' + (h - pad + 16) + '" fill="#9ca3b8" font-size="9" text-anchor="middle">' + px + '</text>';
+  }
+  svg += '<text x="' + (w / 2) + '" y="' + (h - 4) + '" fill="#9ca3b8" font-size="10" text-anchor="middle">售价（元/双）</text>';
+
+  // 数据线
+  function drawLine(data, color, label) {
+    var path = '';
+    data.forEach(function(v, i) {
+      var x = xScale(prices[i]);
+      var y = yScale(v);
+      path += (i === 0 ? 'M' : 'L') + x + ',' + y + ' ';
+    });
+    var s = '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2"/>';
+    s += '<text x="' + (w - 20) + '" y="' + yScale(data[data.length - 1]) + '" fill="' + color + '" font-size="9" text-anchor="end"> ' + label + '</text>';
+    return s;
+  }
+
+  svg += drawLine(opData, '#86efac', '运营商');
+  svg += drawLine(userS30, '#60a5fa', '你(S=30)');
+  svg += drawLine(userS35, '#fbbf24', '你(S=35)');
+  svg += drawLine(userS50, '#f87171', '你(S=50)');
+
+  // 最低价竖线
+  var xMin = xScale(params.minPrice);
+  svg += '<line x1="' + xMin + '" y1="25" x2="' + xMin + '" y2="' + (h - pad) + '" stroke="#fb923c" stroke-width="1" stroke-dasharray="3,2"/>';
+  svg += '<text x="' + xMin + '" y="18" fill="#fb923c" font-size="9" text-anchor="middle">最低价 ' + params.minPrice + '</text>';
+
+  svg += '</svg>';
+  document.getElementById('chartContainer').innerHTML = svg;
+}
+
+// ===== 关键发现 =====
+function renderFindings(params, opBE, userBE, adGap, opAtMin, userAtMin) {
+  var items = [];
+
+  // 1. 运营商利润
+  if (opAtMin.netProfit < 0) {
+    items.push({ type: 'warn', num: '!', text: '<strong>下游运营商在最低价' + params.minPrice + '元时会亏损</strong> ' + opAtMin.netProfit.toFixed(2) + '元/单。盈亏平衡售价为 ' + opBE + ' 元，当前最低价低于此线，运营商没有动力做。' });
+  } else if (opAtMin.netProfit < 3) {
+    items.push({ type: 'info', num: '?', text: '<strong>下游运营商在最低价时利润极薄</strong>：仅 ' + opAtMin.netProfit.toFixed(2) + ' 元/有效单。考虑到运营时间、客服成本，这个利润不足以吸引和留住运营商。建议利润 ≥ 5元/单。' });
+  } else {
+    items.push({ type: 'ok', num: '✓', text: '下游运营商在最低价' + params.minPrice + '元时可盈利 ' + opAtMin.netProfit.toFixed(2) + ' 元/单，利润空间合理。' });
+  }
+
+  // 2. 你的利润
+  if (userAtMin.netProfit < 0) {
+    items.push({ type: 'warn', num: '!', text: '<strong>你在最低价时会亏钱</strong>：每有效单亏损 ' + Math.abs(userAtMin.netProfit).toFixed(2) + ' 元。盈亏平衡售价 ' + userBE + ' 元。要么提高最低售价，要么降低采购成本。' });
+  } else {
+    items.push({ type: 'ok', num: '✓', text: '你在最低价' + params.minPrice + '元时可盈利 ' + userAtMin.netProfit.toFixed(2) + ' 元/有效单（采购成本' + params.shoeCost + '元）。' });
+  }
+
+  // 3. 广告侧
+  items.push({ type: adGap < 0 ? 'warn' : 'ok', num: adGap < 0 ? '!' : '✓', text: '<strong>广告侧结构性分析</strong>：每双广告返点 = (售价÷' + params.roas + ')×' + params.rebateRate + '% = 售价×' + ((params.rebateRate / 100) / params.roas * 100).toFixed(1) + '%。补贴' + params.subsidy + '元是固定成本。售价' + params.minPrice + '时返点仅' + (params.minPrice / params.roas * params.rebateRate / 100).toFixed(2) + '元，' + (adGap < 0 ? '<span style="color:var(--red)">返点不足覆盖补贴，缺口' + Math.abs(adGap).toFixed(2) + '元/单，必须靠鞋价差额弥补</span>' : '返点可覆盖补贴') + '。' });
+
+  // 4. 鞋价差额
+  var shoeMargin = params.shoePrice - params.shoeCost;
+  var t = 1 / (1 - params.returnRate / 100);
+  if (shoeMargin > 0) {
+    items.push({ type: 'ok', num: '✓', text: '鞋价差额 = ' + params.shoePrice + ' - ' + params.shoeCost + ' = ' + shoeMargin + '元/双，含退货折算后 ' + (shoeMargin * t).toFixed(2) + ' 元/有效单。这是你利润的主要来源' + (adGap < 0 ? '，需覆盖广告缺口' + Math.abs(adGap * t).toFixed(2) + '元后才是净利润' : '') + '。' });
+  } else {
+    items.push({ type: 'warn', num: '!', text: '<strong>鞋价差额为0或负</strong>：你的采购成本 ≥ 给下游的鞋价，没有鞋价利润。广告返点又要补贴下游，<span style="color:var(--red)">整个模型不可持续</span>。' });
+  }
+
+  // 5. 推荐建议
+  items.push({ type: 'info', num: '★', text: '<strong>推荐策略</strong>：' + (function() {
+    var recs = [];
+    if (params.minPrice < 85) recs.push('将最低售价提到 85-90元（让运营商每单赚≥5元）');
+    if (params.subsidy > 8 && adGap < 0) recs.push('将广告补贴从' + params.subsidy + '元降到8元，或改为按广告费比例返（如返点的50%）');
+    if (params.shoeCost > 40) recs.push('确保采购成本≤35元（鞋价差额≥15元才能覆盖广告缺口）');
+    if (recs.length === 0) recs.push('当前参数基本合理，建议持续监控退货率和实际ROAS');
+    return recs.join('；');
+  })() });
+
+  var html = items.map(function(it) {
+    return '<li class="' + it.type + '" data-num="' + it.num + '">' + it.text + '</li>';
+  }).join('');
+  document.getElementById('findingsList').innerHTML = html;
+}
+
+// ===== 推荐方案 =====
+function renderStrategies(params) {
+  var strategies = [
+    { name: '当前方案', minPrice: params.minPrice, subsidy: params.subsidy, roas: params.roas, desc: '维持现状' },
+    { name: '推荐A：提价保利润', minPrice: 89, subsidy: 10, roas: 3, desc: '提高最低售价，运营商和总运营都安全' },
+    { name: '推荐B：降补贴+提价', minPrice: 80, subsidy: 7, roas: 3, desc: '降低补贴减轻你的成本，售价略降留住运营商' },
+    { name: '推荐C：比例返点制', minPrice: 75, subsidy: 0, roas: 3, rebatePct: 50, desc: '不给固定补贴，改为广告返点的50%给运营商' }
+  ];
+
+  var tbody = '';
+  strategies.forEach(function(s) {
+    var p = Object.assign({}, params, { minPrice: s.minPrice, subsidy: s.subsidy, roas: s.roas });
+    var op = calcOperator(s.minPrice, p);
+    var user = calcUser(s.minPrice, 35, p);
+
+    // 比例返点制特殊处理
+    if (s.rebatePct) {
+      // 不给固定补贴，而是把广告返点的50%给运营商
+      var t = 1 / (1 - p.returnRate / 100);
+      var adSpend = (s.minPrice / p.roas) * t;
+      var userRebate = adSpend * (p.rebateRate / 100);
+      var opSubsidy = userRebate * (s.rebatePct / 100);
+      var userAdProfit = userRebate - opSubsidy;
+      op.netProfit = op.grossMargin - op.adSpend + opSubsidy - s.minPrice * (p.feeRate / 100) * t;
+      user.netProfit = (p.shoePrice - 35) * t + userAdProfit;
+    }
+
+    var opCls = op.netProfit < 0 ? 'loss' : 'profit';
+    var userCls = user.netProfit < 0 ? 'loss' : 'profit';
+    var evalStr = (op.netProfit > 3 && user.netProfit > 0) ? '<span class="tag green">推荐</span>' : (op.netProfit < 0 || user.netProfit < 0 ? '<span class="tag red">不推荐</span>' : '<span class="tag yellow">可行</span>');
+
+    tbody += '<tr>';
+    tbody += '<td><strong>' + s.name + '</strong><br><span style="font-size:0.85em;color:var(--text2)">' + s.desc + '</span></td>';
+    tbody += '<td>' + s.minPrice + '元</td>';
+    tbody += '<td>' + (s.subsidy > 0 ? s.subsidy + '元' : (s.rebatePct ? '返点' + s.rebatePct + '%' : '0')) + '</td>';
+    tbody += '<td>1:' + s.roas + '</td>';
+    tbody += '<td class="' + opCls + '">' + (op.netProfit >= 0 ? '+' : '') + op.netProfit.toFixed(2) + '</td>';
+    tbody += '<td class="' + userCls + '">' + (user.netProfit >= 0 ? '+' : '') + user.netProfit.toFixed(2) + '</td>';
+    tbody += '<td>' + evalStr + '</td>';
+    tbody += '</tr>';
+  });
+  document.getElementById('strategyBody').innerHTML = tbody;
+}
+
+// ===== 事件绑定 =====
+document.querySelectorAll('input').forEach(function(el) {
+  el.addEventListener('input', render);
+});
+
+// ===== 初始化 =====
+render();
+</script>
+
+</body>
+</html>

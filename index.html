@@ -175,10 +175,12 @@
         }
 
         /* ===== V3 云端版 UI ===== */
-        .cloud-bar { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .cloud-bar { background: #fff; border-radius: 10px; padding: 14px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .cloud-bar.connected { border-left: 3px solid #52c41a; }
         .cloud-bar.disconnected { border-left: 3px solid #d9d9d9; }
-        .cloud-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .cloud-status { display: flex; flex-direction: column; gap: 10px; }
+        .cloud-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .cloud-row.bottom { align-items: center; }
         .cloud-status .left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .cloud-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
         .cloud-badge.online { background: #f6ffed; color: #52c41a; }
@@ -308,19 +310,25 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     <!-- ===== V3 云端栏 ===== -->
     <div class="cloud-bar disconnected" id="cloudBar">
         <div class="cloud-status">
-            <div class="left">
-                <span class="cloud-badge offline" id="cloudBadge"><span class="dot"></span><span id="cloudStatusText">未连接云端</span></span>
-                <div class="project-bar" id="projectBar" style="display:none;">
+            <!-- 第一行：账号信息 + 操作按钮 -->
+            <div class="cloud-row top">
+                <div class="left">
+                    <span class="cloud-badge offline" id="cloudBadge"><span class="dot"></span><span id="cloudStatusText">未连接云端</span></span>
+                </div>
+                <div class="cloud-actions">
+                    <button class="cloud-btn" id="authBtn" onclick="showAuthModal()">登录 / 注册</button>
+                    <button class="cloud-btn" id="importLocalBtn" onclick="importLocalData()" style="display:none;">导入本地数据</button>
+                    <button class="cloud-btn primary" id="syncBtn" onclick="syncNow()" style="display:none;">立即同步</button>
+                    <button class="cloud-btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">退出</button>
+                </div>
+            </div>
+            <!-- 第二行：项目选择 + 新建项目 + 同步状态 -->
+            <div class="cloud-row bottom" id="projectBar" style="display:none;">
+                <div class="project-bar">
                     <select id="projectSelect" onchange="switchProject()"></select>
                     <button class="cloud-btn" onclick="newProject()">+ 新建项目</button>
                 </div>
                 <span class="sync-indicator" id="syncIndicator"></span>
-            </div>
-            <div class="cloud-actions">
-                <button class="cloud-btn" id="authBtn" onclick="showAuthModal()">登录 / 注册</button>
-                <button class="cloud-btn" id="importLocalBtn" onclick="importLocalData()" style="display:none;">导入本地数据</button>
-                <button class="cloud-btn primary" id="syncBtn" onclick="syncNow()" style="display:none;">立即同步</button>
-                <button class="cloud-btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">退出</button>
             </div>
         </div>
     </div>
@@ -366,7 +374,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Parameters -->
-    <div class="card">
+    <div class="card" id="paramsSection">
         <h2>基础参数（可调整）</h2>
         <div class="preset-row">
             <label>行业预设：</label>
@@ -376,6 +384,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <option value="ceramic">陶瓷</option>
                 <option value="digital">数码</option>
                 <option value="clothing">服装</option>
+                <option value="game">游戏代练</option>
             </select>
             <span class="preset-desc" id="presetDesc">鞋类默认：CPC ¥3.7 · CTR 3% · 咨询率 20% · 成交率 30% · 退货率 15%</span>
         </div>
@@ -498,7 +507,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         <div id="forwardInput">
             <h3>正推模式：广告预算 → 预测成交单量 → 预测利润</h3>
             <div class="note" style="background:#f0f5ff;border-color:#adc6ff;color:#003a8c;margin-bottom:12px;font-size:13px;">
-                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量，最终预测能成交多少单、带来多少利润。改漏斗系数（CPC/CTR/咨询率/成交率）后结果实时更新。
+                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量。
+                <span style="display:inline-block;margin-left:12px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #adc6ff;">
+                    预测成交单量：<strong id="forwardPredictedOrders" style="font-size:18px;color:#0F6E56;">—</strong> <span class="unit-text">双</span>
+                </span>
+                <span style="display:inline-block;margin-left:8px;font-size:11px;color:#1677ff;background:#e6f4ff;padding:2px 6px;border-radius:4px;">随 CPC/CTR/咨询率/成交率实时变化</span>
             </div>
         </div>
         <div id="backwardInput" style="display:none;">
@@ -508,7 +521,11 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <div class="input-group" style="display:flex;align-items:flex-end;"><button type="button" onclick="applyFunnelBudget()" style="padding:8px 16px;background:#0F6E56;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap;">应用到主模型 →</button></div>
             </div>
             <div class="note" style="background:#fff7e6;border-color:#ffd591;color:#ad6800;margin-top:8px;margin-bottom:12px;font-size:12px;">
-                点击「应用到主模型」可将漏斗反推的预算写入 GSV:成本 比例，整套利润模型按漏斗预算重算。
+                按当前漏斗系数，达成 <strong id="backwardTargetDisplay">1000</strong> <span class="unit-text">双</span> 目标约需广告预算
+                <span style="display:inline-block;margin:0 4px;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #ffd591;">
+                    <strong id="backwardRequiredBudget" style="font-size:18px;color:#D85A30;">—</strong>
+                </span>
+                <span style="display:inline-block;font-size:11px;color:#d46b08;background:#fff2e8;padding:2px 6px;border-radius:4px;">改目标单量或漏斗系数后实时变化</span>
             </div>
         </div>
 
@@ -1107,8 +1124,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.0';
-var BUILD_TIME = '2026-07-24 11:46';
+var APP_VERSION = 'v3.7.7';
+var BUILD_TIME = '2026-07-24 15:12';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -1973,13 +1990,22 @@ var industryPresets = {
     ceramic:  { cpc: 2.5, ctr: 4,   consult: 25, convert: 35, returnRate: 5,  desc: '陶瓷默认：CPC ¥2.5 · CTR 4% · 咨询率 25% · 成交率 35% · 退货率 5%' },
     digital:  { cpc: 5.0, ctr: 2,   consult: 15, convert: 40, returnRate: 2,  desc: '数码默认：CPC ¥5.0 · CTR 2% · 咨询率 15% · 成交率 40% · 退货率 2%' },
     clothing: { cpc: 3.0, ctr: 3.5, consult: 18, convert: 25, returnRate: 20, desc: '服装默认：CPC ¥3.0 · CTR 3.5% · 咨询率 18% · 成交率 25% · 退货率 20%' },
+    game:     { cpc: 5.0, ctr: 3.5, consult: 6,  convert: 30, returnRate: 2,  desc: '游戏代练默认：CPC ¥5.0 · CTR 3.5% · 咨询率 6% · 成交率 30% · 退货率 2%' },
     custom:   { desc: '自定义系数，手动调整' }
 };
+
+function updatePresetDesc() {
+    var preset = document.getElementById('industryPreset').value;
+    var desc = document.getElementById('presetDesc');
+    if (preset === 'custom') { desc.textContent = '自定义系数，手动调整'; return; }
+    var ps = industryPresets[preset];
+    if (ps && ps.desc) desc.textContent = ps.desc;
+}
 
 function applyPreset() {
     var preset = document.getElementById('industryPreset').value;
     var desc = document.getElementById('presetDesc');
-    if (preset === 'custom') { desc.textContent = '自定义系数，手动调整'; return; }
+    if (preset === 'custom') { desc.textContent = '自定义系数，手动调整'; updateUI(); return; }
     var ps = industryPresets[preset];
     document.getElementById('funnelCPC').value = ps.cpc;
     document.getElementById('funnelCTR').value = ps.ctr;
@@ -1989,6 +2015,8 @@ function applyPreset() {
     desc.textContent = ps.desc;
     updateUI();
 }
+
+function onPresetChange() { applyPreset(); scheduleSaveProject(); }
 
 // ========== 流量漏斗 V2 ==========
 var funnelMode = 'forward';
@@ -2065,9 +2093,17 @@ function renderFunnel(r, p) {
     fpEl.style.color = funnelProfit >= 0 ? '#0F6E56' : '#ff4d4f';
     document.getElementById('funnelInventory').textContent = fmtInt(Math.max(0, unsoldInventory)) + ' ' + p.unit;
 
-    // 更新正推模式说明中的预算显示
+    // 更新正推模式说明中的预算与预测成交单量
     var autoBudgetEl = document.getElementById('funnelAutoBudget');
     if (autoBudgetEl) autoBudgetEl.textContent = fmt(r.adBudget);
+    var forwardOrdersEl = document.getElementById('forwardPredictedOrders');
+    if (forwardOrdersEl) forwardOrdersEl.textContent = fmtInt(Math.round(fr.orders));
+
+    // 更新反推模式说明中的目标单量与所需预算
+    var backwardTargetEl = document.getElementById('backwardTargetDisplay');
+    if (backwardTargetEl) backwardTargetEl.textContent = fmtInt(Math.round(fr.orders));
+    var backwardBudgetEl = document.getElementById('backwardRequiredBudget');
+    if (backwardBudgetEl) backwardBudgetEl.textContent = fmt(fr.budget);
 
     // 更新底部注释中的 ROAS
     var noteRatioEl = document.getElementById('noteRatio');
@@ -2136,13 +2172,14 @@ function applyFunnelBudget() {
     var consultations = convertRate > 0 ? target / convertRate : 0;
     var clicks = consultRate > 0 ? consultations / consultRate : 0;
     var budget = clicks * cpc;
-    // 反推 ROAS：ratio = grossGSV / budget
+    // 反推 ROAS：ratio = 目标成交毛GSV / 反推预算（与反推逻辑一致，不再用全部备货量）
     var wmEnabled = document.getElementById('wuyoumai').checked;
     var actualPrice = val('price') - (wmEnabled ? val('priceReduction') : 0);
-    var grossGSV = val('quantity') * actualPrice;
+    var grossGSV = target * actualPrice;
     var newRatio = budget > 0 ? grossGSV / budget : val('ratio');
     document.getElementById('ratio').value = newRatio.toFixed(2);
     updateUI();
+    scheduleSaveProject();
     alert('已将漏斗反推预算 ' + fmtMoney(budget) + ' 应用到主模型，GSV:成本比例更新为 1:' + newRatio.toFixed(2));
 }
 
@@ -2154,6 +2191,7 @@ var sb = null;           // Supabase 客户端
 var sbUser = null;        // 当前登录用户
 var currentProject = null; // 当前项目 {id, name, ...params}
 var projects = [];        // 用户的项目列表
+var unitColumnExists = false; // projects 表是否有 unit 列（兼容旧库）
 
 // 配置已硬编码，无需用户手动填写
 function getConfig() {
@@ -2174,26 +2212,31 @@ function initCloud(callback) {
             if (res.error) {
                 console.error('Supabase getSession error:', res.error);
                 sb = null;
+                setInputsDisabled(false);
                 updateCloudUI();
                 if (callback) callback(res.error.message || '无法获取会话');
                 return;
             }
             if (res.data.session) {
                 sbUser = res.data.session.user;
+                setInputsDisabled(true);
                 afterLogin().then(function () { if (callback) callback(); });
             } else {
+                setInputsDisabled(false);
                 updateCloudUI();
                 if (callback) callback();
             }
         }).catch(function (e) {
             console.error('Supabase connection error:', e);
             sb = null;
+            setInputsDisabled(false);
             updateCloudUI();
             if (callback) callback(e.message || '连接异常');
         });
     } catch (e) {
         console.error('Supabase init error:', e);
         sb = null;
+        setInputsDisabled(false);
         updateCloudUI();
         if (callback) callback(e.message || '初始化失败');
     }
@@ -2258,17 +2301,28 @@ async function doAuth() {
 async function doLogout() {
     await sb.auth.signOut();
     sbUser = null; currentProject = null; projects = [];
+    setInputsDisabled(false);
     updateCloudUI();
     v3Render();
 }
 
+// 控制参数输入区是否可编辑，防止云端项目加载前用户修改被覆盖
+function setInputsDisabled(disabled) {
+    document.querySelectorAll('#paramsSection input, #paramsSection select, #paramsSection button').forEach(function (el) {
+        el.disabled = disabled;
+    });
+}
+
 // ----- 登录后初始化 -----
 async function afterLogin() {
+    setInputsDisabled(true);
     setSync('syncing', '加载项目...');
     // 加载项目列表
     var res = await sb.from('projects').select('*').order('updated_at', { ascending: false });
-    if (res.error) { setSync('error', '加载项目失败: ' + res.error.message); return; }
+    if (res.error) { setSync('error', '加载项目失败: ' + res.error.message); setInputsDisabled(false); return; }
     projects = res.data || [];
+    // 检测 projects 表是否有 unit 列（兼容未执行 ALTER TABLE 的旧库）
+    unitColumnExists = projects.length > 0 && ('unit' in projects[0]);
     if (projects.length === 0) {
         // 自动创建默认项目
         await createProject('我的项目');
@@ -2277,6 +2331,7 @@ async function afterLogin() {
         loadProjectParams(currentProject);
     }
     updateCloudUI();
+    setInputsDisabled(false);
     setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
     v3Render();
 }
@@ -2284,8 +2339,8 @@ async function afterLogin() {
 // ----- 项目管理 -----
 async function createProject(name) {
     if (!sb || !sbUser) return;
-    var params = collectParams();
-    var res = await sb.from('projects').insert({
+    var params = collectProjectParams();
+    var insertData = {
         user_id: sbUser.id,
         name: name || '新项目',
         industry: params.industry,
@@ -2295,8 +2350,16 @@ async function createProject(name) {
         wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
         funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
         funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
-    }).select();
+    };
+    if (unitColumnExists) insertData.unit = params.unit;
+    var res = await sb.from('projects').insert(insertData).select();
     if (res.error) { alert('创建项目失败: ' + res.error.message); return; }
+    // 首次创建项目后检测 unit 列是否存在（兼容旧库无项目时的检测盲区）
+    if (!unitColumnExists && res.data[0] && 'unit' in res.data[0]) {
+        unitColumnExists = true;
+        // 补存 unit 值
+        if (params.unit) await sb.from('projects').update({ unit: params.unit }).eq('id', res.data[0].id);
+    }
     projects.unshift(res.data[0]);
     currentProject = res.data[0];
     updateCloudUI();
@@ -2312,38 +2375,60 @@ async function switchProject() {
     var id = sel.value;
     var p = projects.find(function (x) { return x.id === id; });
     if (!p) return;
+
+    // 先立即保存当前项目的修改（取消防抖，直接落库），防止切换后丢失
+    setInputsDisabled(true);
+    setSync('syncing', '保存当前项目...');
+    clearTimeout(saveTimer);
+    await flushSaveProject();
+
+    // 切换并加载新项目参数
     currentProject = p;
     loadProjectParams(p);
-    setSync('syncing', '切换项目...');
+    setSync('synced', '已切换到 ' + p.name + ' · ' + new Date().toLocaleTimeString('zh-CN'));
     v3Render();
-    setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
+    setInputsDisabled(false);
 }
 
 // ----- 参数收集/加载 -----
-function collectParams() {
+function collectProjectParams() {
+    function num(id, def) {
+        var v = document.getElementById(id).value;
+        var n = v === '' || v == null ? NaN : parseFloat(v);
+        return isNaN(n) ? def : n;
+    }
     return {
         industry: document.getElementById('industryPreset').value,
         unit: document.getElementById('unit') ? document.getElementById('unit').value : '双',
-        quantity: +document.getElementById('quantity').value || 1000,
-        price: +document.getElementById('price').value || 99,
-        productCost: +document.getElementById('productCost').value || 35,
-        returnRate: +document.getElementById('returnRate').value || 15,
-        ratio: +document.getElementById('ratio').value || 2,
-        platformFee: +document.getElementById('platformFee').value || 1.6,
-        shipping: +document.getElementById('shipping').value || 5,
-        returnShip: +document.getElementById('returnShipping').value || 1.2,
-        dailyOrders: +document.getElementById('dailyOrders').value || 20,
+        quantity: num('quantity', 1000),
+        price: num('price', 99),
+        productCost: num('productCost', 35),
+        returnRate: num('returnRate', 15),
+        ratio: num('ratio', 2),
+        platformFee: num('platformFee', 1.6),
+        shipping: num('shipping', 5),
+        returnShip: num('returnShipping', 1.2),
+        dailyOrders: num('dailyOrders', 20),
         wuyoumai: document.getElementById('wuyoumai').checked,
-        priceReduction: +document.getElementById('priceReduction').value || 5,
-        wmComm: +document.getElementById('wmComm').value || 6,
-        funnelCPC: +document.getElementById('funnelCPC').value || 3.7,
-        funnelCTR: +document.getElementById('funnelCTR').value || 3,
-        funnelConsult: +document.getElementById('funnelConsult').value || 20,
-        funnelConvert: +document.getElementById('funnelConvert').value || 30
+        priceReduction: num('priceReduction', 5),
+        wmComm: num('wmComm', 6),
+        funnelCPC: num('funnelCPC', 3.7),
+        funnelCTR: num('funnelCTR', 3),
+        funnelConsult: num('funnelConsult', 20),
+        funnelConvert: num('funnelConvert', 30)
     };
 }
 function loadProjectParams(p) {
-    if (p.industry) { document.getElementById('industryPreset').value = p.industry; applyPreset(); }
+    // 取消任何待执行的自动保存，避免加载新项目后旧保存覆盖数据库
+    clearTimeout(saveTimer);
+
+    var preset = document.getElementById('industryPreset');
+    // 加载参数前临时解绑行业预设 change 事件，避免设置 value 时意外触发 applyPreset
+    if (preset) {
+        preset.removeEventListener('change', onPresetChange);
+    }
+
+    if (p.unit != null && document.getElementById('unit')) { document.getElementById('unit').value = p.unit; updateUnitLabels(); }
     if (p.quantity != null) document.getElementById('quantity').value = p.quantity;
     if (p.price != null) document.getElementById('price').value = p.price;
     if (p.product_cost != null) document.getElementById('productCost').value = p.product_cost;
@@ -2360,29 +2445,58 @@ function loadProjectParams(p) {
     if (p.funnel_ctr != null) document.getElementById('funnelCTR').value = p.funnel_ctr;
     if (p.funnel_consult != null) document.getElementById('funnelConsult').value = p.funnel_consult;
     if (p.funnel_convert != null) document.getElementById('funnelConvert').value = p.funnel_convert;
+    if (p.industry && preset) { preset.value = p.industry; updatePresetDesc(); }
+
+    // 恢复行业预设 change 事件
+    if (preset) {
+        preset.addEventListener('change', onPresetChange);
+    }
+
     updateUI();
 }
 
-// 自动保存参数（防抖）
+// 立即保存当前项目参数到云端（不防抖，直接执行）
+async function flushSaveProject() {
+    if (!sb || !sbUser || !currentProject || isSaving) return;
+    isSaving = true;
+    var params = collectProjectParams();
+    var updateData = {
+        industry: params.industry,
+        quantity: params.quantity, price: params.price, product_cost: params.productCost,
+        return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
+        shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
+        wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
+        funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
+        funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
+    };
+    if (unitColumnExists) updateData.unit = params.unit;
+    setSync('syncing', '保存参数...');
+    var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
+    if (res.error) {
+        console.error('保存项目参数失败:', res.error);
+        setSync('error', '保存失败: ' + res.error.message);
+    } else {
+        // 同步内存中的项目快照（projects 数组中的同一对象引用），切换项目时读到最新值
+        Object.keys(updateData).forEach(function (k) {
+            if (currentProject && k in currentProject) currentProject[k] = updateData[k];
+        });
+        hasUnsavedChanges = false;
+        setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
+    }
+    isSaving = false;
+}
+
+// 自动保存参数（防抖，300ms 后调用 flushSaveProject，更快落库）
 var saveTimer = null;
+var isSaving = false;
+var hasUnsavedChanges = false;
 function scheduleSaveProject() {
     if (!sb || !sbUser || !currentProject) return;
+    hasUnsavedChanges = true;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(async function () {
-        var params = collectParams();
-        var res = await sb.from('projects').update({
-            industry: params.industry,
-            quantity: params.quantity, price: params.price, product_cost: params.productCost,
-            return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
-            shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
-            wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
-            funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
-            funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
-        }).eq('id', currentProject.id);
-        if (!res.error) {
-            setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
-        }
-    }, 2000);
+    saveTimer = setTimeout(function () {
+        flushSaveProject();
+    }, 300);
 }
 
 // ----- 同步状态 -----
@@ -2398,16 +2512,7 @@ async function syncNow() {
     setSync('syncing', '同步中...');
     // 保存当前参数
     if (currentProject) {
-        var params = collectParams();
-        await sb.from('projects').update({
-            industry: params.industry,
-            quantity: params.quantity, price: params.price, product_cost: params.productCost,
-            return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
-            shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
-            wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
-            funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
-            funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
-        }).eq('id', currentProject.id);
+        await flushSaveProject();
     }
     await v3Render();
     setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
@@ -2637,11 +2742,19 @@ async function importLocalData() {
 }
 
 // ========== Init ==========
+// 先禁用参数区，等待云端项目加载完成后再启用，防止用户修改被覆盖
+setInputsDisabled(true);
+
 document.querySelectorAll('input').forEach(function (el) {
     el.addEventListener('input', function() { updateUI(); scheduleSaveProject(); });
     if (el.type === 'checkbox') el.addEventListener('change', function() { updateUI(); scheduleSaveProject(); });
 });
-document.getElementById('industryPreset').addEventListener('change', function() { applyPreset(); scheduleSaveProject(); });
+// 漏斗系数与目标单量显式绑定，确保正推/反推数字实时更新
+['funnelCPC','funnelCTR','funnelConsult','funnelConvert','funnelTargetInput'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', function () { updateUI(); scheduleSaveProject(); });
+});
+document.getElementById('industryPreset').addEventListener('change', onPresetChange);
 document.getElementById('unit').addEventListener('input', function() { localStorage.setItem('xianyu_unit', this.value); });
 var savedUnit = localStorage.getItem('xianyu_unit');
 if (savedUnit) document.getElementById('unit').value = savedUnit;
@@ -2650,6 +2763,14 @@ updateUI();
 v3Render();
 initCloud(function (err) {
     if (err) console.warn('Cloud init:', err);
+});
+
+// 页面关闭前如有未保存修改，提醒用户
+window.addEventListener('beforeunload', function (e) {
+    if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
 });
 </script>
 
@@ -2662,8 +2783,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.0';
-var BUILD_TIME = '2026-07-24 11:46';
+var APP_VERSION = 'v3.7.7';
+var BUILD_TIME = '2026-07-24 15:12';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
