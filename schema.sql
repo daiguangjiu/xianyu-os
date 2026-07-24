@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS projects (
     id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name        TEXT NOT NULL DEFAULT '我的项目',
-    industry    TEXT DEFAULT 'shoes',  -- shoes / ceramic / digital / clothing / custom
+    industry    TEXT DEFAULT 'shoes',  -- shoes / ceramic / digital / clothing / game / custom
     unit        TEXT DEFAULT '双',      -- 商品单位（双/件/台/个等，用户自定义）
 
     -- 基础参数快照
