@@ -499,7 +499,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
         <div id="forwardInput">
             <h3>正推模式：广告预算 → 预测成交单量 → 预测利润</h3>
             <div class="note" style="background:#f0f5ff;border-color:#adc6ff;color:#003a8c;margin-bottom:12px;font-size:13px;">
-                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量，最终预测能成交多少单、带来多少利润。改漏斗系数（CPC/CTR/咨询率/成交率）后结果实时更新。
+                自动取上方模型算出的广告预算 <strong id="funnelAutoBudget">—</strong>，代入漏斗推导每一层数量。预测成交单量：<strong id="forwardPredictedOrders" style="font-size:16px;color:#0F6E56;">—</strong> <span class="unit-text">双</span>。改漏斗系数（CPC/CTR/咨询率/成交率）后结果实时更新。
             </div>
         </div>
         <div id="backwardInput" style="display:none;">
@@ -509,7 +509,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <div class="input-group" style="display:flex;align-items:flex-end;"><button type="button" onclick="applyFunnelBudget()" style="padding:8px 16px;background:#0F6E56;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap;">应用到主模型 →</button></div>
             </div>
             <div class="note" style="background:#fff7e6;border-color:#ffd591;color:#ad6800;margin-top:8px;margin-bottom:12px;font-size:12px;">
-                点击「应用到主模型」可将漏斗反推的预算写入 GSV:成本 比例，整套利润模型按漏斗预算重算。
+                按当前漏斗系数，达成 <strong id="backwardTargetDisplay">1000</strong> <span class="unit-text">双</span> 目标约需广告预算 <strong id="backwardRequiredBudget" style="font-size:16px;color:#D85A30;">—</strong>。改目标单量或漏斗系数后数字实时更新。
             </div>
         </div>
 
@@ -1108,8 +1108,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.4';
-var BUILD_TIME = '2026-07-24 14:02';
+var APP_VERSION = 'v3.7.5';
+var BUILD_TIME = '2026-07-24 14:18';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2075,9 +2075,17 @@ function renderFunnel(r, p) {
     fpEl.style.color = funnelProfit >= 0 ? '#0F6E56' : '#ff4d4f';
     document.getElementById('funnelInventory').textContent = fmtInt(Math.max(0, unsoldInventory)) + ' ' + p.unit;
 
-    // 更新正推模式说明中的预算显示
+    // 更新正推模式说明中的预算与预测成交单量
     var autoBudgetEl = document.getElementById('funnelAutoBudget');
     if (autoBudgetEl) autoBudgetEl.textContent = fmt(r.adBudget);
+    var forwardOrdersEl = document.getElementById('forwardPredictedOrders');
+    if (forwardOrdersEl) forwardOrdersEl.textContent = fmtInt(Math.round(fr.orders));
+
+    // 更新反推模式说明中的目标单量与所需预算
+    var backwardTargetEl = document.getElementById('backwardTargetDisplay');
+    if (backwardTargetEl) backwardTargetEl.textContent = fmtInt(Math.round(fr.orders));
+    var backwardBudgetEl = document.getElementById('backwardRequiredBudget');
+    if (backwardBudgetEl) backwardBudgetEl.textContent = fmt(fr.budget);
 
     // 更新底部注释中的 ROAS
     var noteRatioEl = document.getElementById('noteRatio');
@@ -2146,13 +2154,14 @@ function applyFunnelBudget() {
     var consultations = convertRate > 0 ? target / convertRate : 0;
     var clicks = consultRate > 0 ? consultations / consultRate : 0;
     var budget = clicks * cpc;
-    // 反推 ROAS：ratio = grossGSV / budget
+    // 反推 ROAS：ratio = 目标成交毛GSV / 反推预算（与反推逻辑一致，不再用全部备货量）
     var wmEnabled = document.getElementById('wuyoumai').checked;
     var actualPrice = val('price') - (wmEnabled ? val('priceReduction') : 0);
-    var grossGSV = val('quantity') * actualPrice;
+    var grossGSV = target * actualPrice;
     var newRatio = budget > 0 ? grossGSV / budget : val('ratio');
     document.getElementById('ratio').value = newRatio.toFixed(2);
     updateUI();
+    scheduleSaveProject();
     alert('已将漏斗反推预算 ' + fmtMoney(budget) + ' 应用到主模型，GSV:成本比例更新为 1:' + newRatio.toFixed(2));
 }
 
@@ -2717,8 +2726,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.4';
-var BUILD_TIME = '2026-07-24 14:02';
+var APP_VERSION = 'v3.7.5';
+var BUILD_TIME = '2026-07-24 14:18';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
