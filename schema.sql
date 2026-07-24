@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS projects (
     user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name        TEXT NOT NULL DEFAULT '我的项目',
     industry    TEXT DEFAULT 'shoes',  -- shoes / ceramic / digital / clothing / custom
-    
+    unit        TEXT DEFAULT '双',      -- 商品单位（双/件/台/个等，用户自定义）
+
     -- 基础参数快照
     quantity      INTEGER  DEFAULT 1000,
     price         NUMERIC DEFAULT 99,
@@ -178,6 +179,7 @@ RETURNS TABLE (
     owner_email TEXT,
     user_id UUID,
     industry TEXT,
+    unit TEXT,
     quantity INTEGER,
     price NUMERIC,
     product_cost NUMERIC,
@@ -207,6 +209,7 @@ BEGIN
         u.email::TEXT AS owner_email,
         p.user_id::UUID,
         p.industry::TEXT,
+        p.unit::TEXT,
         p.quantity::INTEGER,
         p.price::NUMERIC,
         p.product_cost::NUMERIC,
