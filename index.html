@@ -1108,8 +1108,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.3';
-var BUILD_TIME = '2026-07-24 12:41';
+var APP_VERSION = 'v3.7.4';
+var BUILD_TIME = '2026-07-24 14:02';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2348,11 +2348,19 @@ async function switchProject() {
     var id = sel.value;
     var p = projects.find(function (x) { return x.id === id; });
     if (!p) return;
+
+    // 先立即保存当前项目的修改（取消防抖，直接落库），防止切换后丢失
+    setInputsDisabled(true);
+    setSync('syncing', '保存当前项目...');
+    clearTimeout(saveTimer);
+    await flushSaveProject();
+
+    // 切换并加载新项目参数
     currentProject = p;
     loadProjectParams(p);
-    setSync('syncing', '切换项目...');
+    setSync('synced', '已切换到 ' + p.name + ' · ' + new Date().toLocaleTimeString('zh-CN'));
     v3Render();
-    setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
+    setInputsDisabled(false);
 }
 
 // ----- 参数收集/加载 -----
@@ -2400,35 +2408,41 @@ function loadProjectParams(p) {
     updateUI();
 }
 
-// 自动保存参数（防抖）
+// 立即保存当前项目参数到云端（不防抖，直接执行）
+async function flushSaveProject() {
+    if (!sb || !sbUser || !currentProject) return;
+    var params = collectParams();
+    var updateData = {
+        industry: params.industry,
+        quantity: params.quantity, price: params.price, product_cost: params.productCost,
+        return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
+        shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
+        wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
+        funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
+        funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
+    };
+    if (unitColumnExists) updateData.unit = params.unit;
+    setSync('syncing', '保存参数...');
+    var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
+    if (res.error) {
+        console.error('保存项目参数失败:', res.error);
+        setSync('error', '保存失败: ' + res.error.message);
+    } else {
+        // 同步内存中的项目快照（projects 数组中的同一对象引用），切换项目时读到最新值
+        Object.keys(updateData).forEach(function (k) {
+            if (currentProject && k in currentProject) currentProject[k] = updateData[k];
+        });
+        setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
+    }
+}
+
+// 自动保存参数（防抖，800ms 后调用 flushSaveProject）
 var saveTimer = null;
 function scheduleSaveProject() {
     if (!sb || !sbUser || !currentProject) return;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(async function () {
-        var params = collectParams();
-        var updateData = {
-            industry: params.industry,
-            quantity: params.quantity, price: params.price, product_cost: params.productCost,
-            return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
-            shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
-            wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
-            funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
-            funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
-        };
-        if (unitColumnExists) updateData.unit = params.unit;
-        setSync('syncing', '保存参数...');
-        var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
-        if (res.error) {
-            console.error('保存项目参数失败:', res.error);
-            setSync('error', '保存失败: ' + res.error.message);
-        } else {
-            // 更新内存中的项目快照，避免刷新时读到旧值
-            Object.keys(updateData).forEach(function (k) {
-                if (currentProject && k in currentProject) currentProject[k] = updateData[k];
-            });
-            setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
-        }
+    saveTimer = setTimeout(function () {
+        flushSaveProject();
     }, 800);
 }
 
@@ -2445,26 +2459,7 @@ async function syncNow() {
     setSync('syncing', '同步中...');
     // 保存当前参数
     if (currentProject) {
-        var params = collectParams();
-        var updateData = {
-            industry: params.industry,
-            quantity: params.quantity, price: params.price, product_cost: params.productCost,
-            return_rate: params.returnRate, ratio: params.ratio, platform_fee: params.platformFee,
-            shipping: params.shipping, return_ship: params.returnShip, daily_orders: params.dailyOrders,
-            wuyoumai: params.wuyoumai, price_reduction: params.priceReduction, wm_comm: params.wmComm,
-            funnel_cpc: params.funnelCPC, funnel_ctr: params.funnelCTR,
-            funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
-        };
-        if (unitColumnExists) updateData.unit = params.unit;
-        var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
-        if (res.error) {
-            console.error('syncNow 保存失败:', res.error);
-            setSync('error', '同步失败: ' + res.error.message);
-        } else {
-            Object.keys(updateData).forEach(function (k) {
-                if (currentProject && k in currentProject) currentProject[k] = updateData[k];
-            });
-        }
+        await flushSaveProject();
     }
     await v3Render();
     setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
@@ -2722,8 +2717,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.3';
-var BUILD_TIME = '2026-07-24 12:41';
+var APP_VERSION = 'v3.7.4';
+var BUILD_TIME = '2026-07-24 14:02';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
