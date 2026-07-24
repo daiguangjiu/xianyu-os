@@ -376,6 +376,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
                 <option value="ceramic">陶瓷</option>
                 <option value="digital">数码</option>
                 <option value="clothing">服装</option>
+                <option value="game">游戏代练</option>
             </select>
             <span class="preset-desc" id="presetDesc">鞋类默认：CPC ¥3.7 · CTR 3% · 咨询率 20% · 成交率 30% · 退货率 15%</span>
         </div>
@@ -1107,8 +1108,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.1';
-var BUILD_TIME = '2026-07-24 12:00';
+var APP_VERSION = 'v3.7.2';
+var BUILD_TIME = '2026-07-24 12:14';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -1973,6 +1974,7 @@ var industryPresets = {
     ceramic:  { cpc: 2.5, ctr: 4,   consult: 25, convert: 35, returnRate: 5,  desc: '陶瓷默认：CPC ¥2.5 · CTR 4% · 咨询率 25% · 成交率 35% · 退货率 5%' },
     digital:  { cpc: 5.0, ctr: 2,   consult: 15, convert: 40, returnRate: 2,  desc: '数码默认：CPC ¥5.0 · CTR 2% · 咨询率 15% · 成交率 40% · 退货率 2%' },
     clothing: { cpc: 3.0, ctr: 3.5, consult: 18, convert: 25, returnRate: 20, desc: '服装默认：CPC ¥3.0 · CTR 3.5% · 咨询率 18% · 成交率 25% · 退货率 20%' },
+    game:     { cpc: 5.0, ctr: 3.5, consult: 6,  convert: 30, returnRate: 2,  desc: '游戏代练默认：CPC ¥5.0 · CTR 3.5% · 咨询率 6% · 成交率 30% · 退货率 2%' },
     custom:   { desc: '自定义系数，手动调整' }
 };
 
@@ -2678,8 +2680,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.1';
-var BUILD_TIME = '2026-07-24 12:00';
+var APP_VERSION = 'v3.7.2';
+var BUILD_TIME = '2026-07-24 12:14';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
