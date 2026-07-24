@@ -126,6 +126,11 @@
         .funnel-mode-toggle button:last-child { border-right: none; }
         .funnel-mode-toggle button.active { background: #e6f4ff; color: #1677ff; font-weight: 600; }
         .funnel-coeffs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        .funnel-coeffs .input-group label { font-size: 12px; min-width: 0; }
+        .funnel-coeffs .input-wrapper input { min-width: 56px; text-align: center; padding: 6px 4px; }
+        .funnel-coeffs input[type="number"]::-webkit-inner-spin-button,
+        .funnel-coeffs input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .funnel-coeffs input[type="number"] { -moz-appearance: textfield; }
         .funnel-viz { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
         .funnel-bar { display: flex; align-items: center; padding: 10px 16px; color: #fff; font-size: 13px; font-weight: 500; border-radius: 4px; }
         .funnel-bar .stage-label { min-width: 80px; }
@@ -1124,8 +1129,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.7';
-var BUILD_TIME = '2026-07-24 15:12';
+var APP_VERSION = 'v3.7.8';
+var BUILD_TIME = '2026-07-24 15:33';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2783,8 +2788,8 @@ window.addEventListener('beforeunload', function (e) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.7';
-var BUILD_TIME = '2026-07-24 15:12';
+var APP_VERSION = 'v3.7.8';
+var BUILD_TIME = '2026-07-24 15:33';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
