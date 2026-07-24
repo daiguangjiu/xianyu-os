@@ -152,9 +152,10 @@
     <div class="card">
         <h2>基础参数（可调整）</h2>
         <div class="input-grid">
-            <div class="input-group"><label>备货量</label><div class="input-wrapper"><input type="number" id="quantity" value="1000" min="1" step="1"><span class="suffix">双</span></div></div>
-            <div class="input-group"><label>售价/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="price" value="99" min="1" step="1"></div></div>
-            <div class="input-group"><label>产品成本/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="productCost" value="35" min="0" step="1"></div></div>
+            <div class="input-group"><label>商品单位</label><div class="input-wrapper"><input type="text" id="unit" value="双" maxlength="4" style="width:50px"></div></div>
+            <div class="input-group"><label>备货量</label><div class="input-wrapper"><input type="number" id="quantity" value="1000" min="1" step="1"><span class="suffix unit-text">双</span></div></div>
+            <div class="input-group"><label>售价/<span class="unit-text">双</span></label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="price" value="99" min="1" step="1"></div></div>
+            <div class="input-group"><label>产品成本/<span class="unit-text">双</span></label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="productCost" value="35" min="0" step="1"></div></div>
             <div class="input-group"><label>退货率</label><div class="input-wrapper"><input type="number" id="returnRate" value="15" min="0" max="100" step="1"><span class="suffix">%</span></div></div>
             <div class="input-group"><label>GSV:成本比</label><div class="input-wrapper"><span class="prefix">1:</span><input type="number" id="ratio" value="2" min="1" step="0.1"></div></div>
             <div class="input-group"><label>平台佣金</label><div class="input-wrapper"><input type="number" id="platformFee" value="1.6" min="0" max="100" step="0.1"><span class="suffix">%</span></div></div>
@@ -173,7 +174,7 @@
         </div>
         <div class="wm-section disabled" id="wmSection">
             <div class="input-grid">
-                <div class="input-group"><label>降价金额/双</label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="priceReduction" value="5" min="0" step="1"></div></div>
+                <div class="input-group"><label>降价金额/<span class="unit-text">双</span></label><div class="input-wrapper"><span class="prefix">¥</span><input type="number" id="priceReduction" value="5" min="0" step="1"></div></div>
                 <div class="input-group"><label>无忧卖佣金率</label><div class="input-wrapper"><input type="number" id="wmComm" value="6" min="0" max="100" step="0.5"><span class="suffix">%</span></div></div>
             </div>
         </div>
@@ -220,7 +221,7 @@
         <div class="metrics-grid">
             <div class="metric"><div class="label">ROAS（广告回报率）</div><div class="value highlight" id="m-roas">—</div><div class="sub">毛GSV ÷ 广告费</div></div>
             <div class="metric"><div class="label">CPA（单次获客成本）</div><div class="value" id="m-cpa">—</div><div class="sub">广告费 ÷ 有效订单</div></div>
-            <div class="metric"><div class="label">单双广告成本</div><div class="value" id="m-adpair">—</div><div class="sub">广告费 ÷ 备货量</div></div>
+            <div class="metric"><div class="label">单<span class="unit-text">双</span>广告成本</div><div class="value" id="m-adpair">—</div><div class="sub">广告费 ÷ 备货量</div></div>
             <div class="metric"><div class="label">毛利率（扣产品成本）</div><div class="value" id="m-margin">—</div><div class="sub">(净GSV-产品成本) ÷ 净GSV</div></div>
             <div class="metric"><div class="label">盈亏平衡 ROAS</div><div class="value warning" id="m-breakeven">—</div><div class="sub">达到此值不赚不亏</div></div>
             <div class="metric"><div class="label">所需启动资金</div><div class="value" id="m-capital">—</div><div class="sub">备货成本 + 广告预算</div></div>
@@ -250,12 +251,12 @@
     <div class="card">
         <h2>敏感性分析</h2>
         <h3>① 不同无忧卖降价金额的盈利模型 <span style="font-weight:normal;color:#8c8c8c;font-size:12px;">不参与=平台佣金 · 降价=无忧卖佣金</span></h3>
-        <table><thead><tr><th>降价金额/双</th><th>实际售价</th><th>净GSV</th><th>佣金</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>vs不参与</th></tr></thead><tbody id="priceSensBody"></tbody></table>
+        <table><thead><tr><th>降价金额/<span class="unit-text">双</span></th><th>实际售价</th><th>净GSV</th><th>佣金</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>vs不参与</th></tr></thead><tbody id="priceSensBody"></tbody></table>
         <div class="note" style="margin-top:8px;margin-bottom:16px;font-size:12px;padding:8px 14px;"><strong>读法：</strong>「不参与」为基准行（只收平台佣金），各降价行使用无忧卖佣金（互斥，不收平台佣金）。「vs不参与」&gt;0 表示该降价幅度比不参与更赚，&lt;0 则更亏。</div>
         <h3>② 不同退货率（其他参数不变）</h3>
         <table><thead><tr><th>退货率</th><th>退货数</th><th>净GSV</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th></tr></thead><tbody id="returnSensBody"></tbody></table>
         <h3>③ 不同产品成本（其他参数不变）</h3>
-        <table><thead><tr><th>产品成本/双</th><th>产品总成本</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>盈亏平衡ROAS</th></tr></thead><tbody id="costSensBody"></tbody></table>
+        <table><thead><tr><th>产品成本/<span class="unit-text">双</span></th><th>产品总成本</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>盈亏平衡ROAS</th></tr></thead><tbody id="costSensBody"></tbody></table>
     </div>
 
     <!-- Notes -->
@@ -263,7 +264,7 @@
         <h2>测算说明与建议</h2>
         <ul>
             <li><strong>GSV成本 1:2</strong>：广告投入与 GSV 比值 1:2（ROAS=2），广告预算 = 毛GSV ÷ 2。</li>
-            <li><strong>退货率</strong>：退货按全额退款，退货运费另算。产品成本按全部 1000 双计（备货已支出）。</li>
+            <li><strong>退货率</strong>：退货按全额退款，退货运费另算。产品成本按售出量计（退货退回可再售）。</li>
             <li><strong>平台佣金（交易服务费）</strong>：按全部成交单 GSV 扣费（买家确认收货即扣，退货不退佣金）。普通订单 0.6%，鱼小铺 1.6%。</li>
             <li><strong>无忧卖</strong>：开启后实际售价 = 原价 − 降价金额，GSV 按降价后重算。佣金互斥：参与无忧卖时只算无忧卖佣金（不收平台佣金），不参与时只算平台佣金。</li>
             <li><strong>敏感性分析①</strong>：不同无忧卖降价金额的盈利模型——「不参与」为基准（平台佣金），各降价行用无忧卖佣金。「vs不参与」列直接告诉你降多少钱参与最划算。</li>
@@ -421,7 +422,7 @@
                         <strong style="color:#ff4d4f;">风控红线：</strong><br>
                         • ROAS 低于目标 80% → 预警并减预算<br>
                         • 退货率 &gt; 20% → 暂停放量排查<br>
-                        • 库存 &lt; 300 双 → 转维稳期
+                        • 库存 &lt; 300 <span class="unit-text">双</span> → 转维稳期
                     </td>
                 </tr>
                 <tr>
@@ -480,7 +481,7 @@
                         • 开启无忧卖降价清尾货<br>
                         • 设置满减/优惠券提升客单价<br>
                         • 鱼塘社区发帖引流（免费流量）<br>
-                        • 尾货 50 双以下 → 直接挂闲鱼一口价<br>
+                        • 尾货 50 <span class="unit-text">双</span>以下 → 直接挂闲鱼一口价<br>
                         • 站外引流：抖音/小红书 → 闲鱼成交
                     </td>
                 </tr>
@@ -543,7 +544,7 @@
                 <tr><td>CPA</td><td>跑满3天 CPA > 目标2倍关停</td><td>CPA 是否随放量上升</td><td>—</td><td>CPA > 目标 × 2</td></tr>
                 <tr><td>CTR</td><td>CTR < 1.5% 换图</td><td>素材 CTR 衰减监控</td><td>—</td><td>CTR < 1.5%</td></tr>
                 <tr><td>退货率</td><td>退货率 > 25% 关停</td><td>退货率 > 20% 暂停放量</td><td>退货趋势是否收敛</td><td>退货率 > 20%</td></tr>
-                <tr><td>库存</td><td>—</td><td>库存 < 300 双转维稳</td><td>尾货 < 50 双挂一口价</td><td>库存 < 300 / < 50</td></tr>
+                <tr><td>库存</td><td>—</td><td>库存 < 300 <span class="unit-text">双</span>转维稳</td><td>尾货 < 50 <span class="unit-text">双</span>挂一口价</td><td>库存 < 300 / < 50</td></tr>
             </tbody>
         </table>
 
@@ -645,8 +646,15 @@ function calc(p) {
 }
 
 // ========== UI Update ==========
+function updateUnitLabels(unit) {
+    document.querySelectorAll('.unit-text').forEach(function (el) {
+        el.textContent = unit;
+    });
+}
 function updateUI() {
     var wmEnabled = document.getElementById('wuyoumai').checked;
+    var unit = document.getElementById('unit') ? document.getElementById('unit').value : '双';
+    updateUnitLabels(unit);
     var wmSection = document.getElementById('wmSection');
     var wmNote = document.getElementById('wmNote');
     var wmTag = document.getElementById('tagWM');
@@ -669,12 +677,13 @@ function updateUI() {
         returnRate: val('returnRate') / 100, ratio: val('ratio'),
         platformFeeRate: val('platformFee') / 100, shipping: val('shipping'),
         returnShipping: val('returnShipping'), dailyOrders: val('dailyOrders'),
-        wmEnabled: wmEnabled, priceReduction: val('priceReduction'), wmCommRate: val('wmComm') / 100
+        wmEnabled: wmEnabled, priceReduction: val('priceReduction'), wmCommRate: val('wmComm') / 100,
+        unit: unit
     };
     var r = calc(p);
 
     // Header tags
-    document.getElementById('tagQuantity').textContent = '备货 ' + fmtInt(p.quantity) + ' 双';
+    document.getElementById('tagQuantity').textContent = '备货 ' + fmtInt(p.quantity) + ' ' + p.unit;
     document.getElementById('tagReturn').textContent = '退货率 ' + fmtPct(p.returnRate).replace('.0%', '%');
     document.getElementById('tagRatio').textContent = 'GSV:成本 = 1:' + p.ratio;
     document.getElementById('tagDaily').textContent = '日均 ' + fmtInt(p.dailyOrders) + ' 单';
@@ -690,19 +699,19 @@ function updateUI() {
     // Sales table
     var salesHtml = '';
     if (wmEnabled) {
-        salesHtml += '<tr><td>原价/双</td><td class="num">—</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">—</td></tr>';
+        salesHtml += '<tr><td>原价/' + p.unit + '</td><td class="num">—</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">—</td></tr>';
         salesHtml += '<tr class="wm-row"><td>无忧卖降价</td><td class="num">—</td><td class="num loss">-' + fmtMoney(r.priceReduction) + '</td><td class="num loss">-' + fmt(r.totalReduction) + '</td></tr>';
-        salesHtml += '<tr><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num"><strong>' + fmtMoney(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt(r.grossGSV) + '</strong></td></tr>';
+        salesHtml += '<tr><td><strong>实际售价</strong></td><td class="num">' + fmtInt(p.quantity) + ' ' + p.unit + '</td><td class="num"><strong>' + fmtMoney(r.actualPrice) + '</strong></td><td class="num"><strong>' + fmt(r.grossGSV) + '</strong></td></tr>';
     } else {
-        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' 双</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">' + fmt(r.grossGSV) + '</td></tr>';
+        salesHtml += '<tr><td>备货总量</td><td class="num">' + fmtInt(p.quantity) + ' ' + p.unit + '</td><td class="num">' + fmtMoney(p.price) + '</td><td class="num">' + fmt(r.grossGSV) + '</td></tr>';
     }
-    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' 双</td><td class="num">' + fmtMoney(r.actualPrice) + '</td><td class="num loss">-' + fmt(r.returnRefund) + '</td></tr>';
-    salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>净销售（有效订单）</strong></td><td class="num">' + fmtInt(r.validOrders) + ' 双</td><td class="num">—</td><td class="num profit">' + fmt(r.netGSV) + '</td></tr>';
+    salesHtml += '<tr><td>退货（' + fmtPct(p.returnRate).replace('.0%', '%') + '）</td><td class="num">' + fmtInt(r.returnCount) + ' ' + p.unit + '</td><td class="num">' + fmtMoney(r.actualPrice) + '</td><td class="num loss">-' + fmt(r.returnRefund) + '</td></tr>';
+    salesHtml += '<tr style="border-top:2px solid #d9d9d9;"><td><strong>净销售（有效订单）</strong></td><td class="num">' + fmtInt(r.validOrders) + ' ' + p.unit + '</td><td class="num">—</td><td class="num profit">' + fmt(r.netGSV) + '</td></tr>';
     document.getElementById('salesBody').innerHTML = salesHtml;
 
     // Cost table
     var costRows = [
-        ['产品成本', fmtInt(r.validOrders) + '双 × ' + fmtMoney(p.productCost) + '（售出量）', r.totalProductCost]
+        ['产品成本', fmtInt(r.validOrders) + p.unit + ' × ' + fmtMoney(p.productCost) + '（售出量）', r.totalProductCost]
     ];
     if (wmEnabled) {
         costRows.push(['无忧卖佣金', fmtPct(p.wmCommRate) + ' × 全部成交GSV', r.wmCommission]);
@@ -726,7 +735,7 @@ function updateUI() {
     if (wmEnabled) {
         var diff = r.profit - r.noWmProfit;
         var cmpRows = [
-            ['实际售价/双', fmtMoney(p.price), fmtMoney(r.actualPrice), '<span class="loss">' + sign(-r.priceReduction) + fmtMoney(r.priceReduction) + '</span>'],
+            ['实际售价/' + p.unit, fmtMoney(p.price), fmtMoney(r.actualPrice), '<span class="loss">' + sign(-r.priceReduction) + fmtMoney(r.priceReduction) + '</span>'],
             ['毛 GSV', fmt(r.noWmGrossGSV), fmt(r.grossGSV), '<span class="loss">' + sign(r.grossGSV - r.noWmGrossGSV) + fmt(r.grossGSV - r.noWmGrossGSV) + '</span>'],
             ['净 GSV', fmt(r.noWmNetGSV), fmt(r.netGSV), '<span class="loss">' + sign(r.netGSV - r.noWmNetGSV) + fmt(r.netGSV - r.noWmNetGSV) + '</span>'],
             ['平台佣金', fmt(r.noWmPlatformFee), r.platformFee > 0 ? fmt(r.platformFee) : '<span style="color:#bfbfbf;">不收取</span>', '<span class="profit">-' + fmt(r.noWmPlatformFee) + '</span>'],
@@ -911,7 +920,7 @@ function updateUI() {
         var profit = n - tc;
         var prr = n > 0 ? profit / n : 0;
         var isC = Math.abs(rr - p.returnRate) < 0.001;
-        rrH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmtPct(rr).replace('.0%', '%') + (isC ? ' ←' : '') + '</td><td class="num">' + rc + ' 双</td><td class="num">' + fmt(n) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td></tr>';
+        rrH += '<tr class="' + (isC ? 'highlight-row' : '') + '"><td>' + fmtPct(rr).replace('.0%', '%') + (isC ? ' ←' : '') + '</td><td class="num">' + rc + ' ' + p.unit + '</td><td class="num">' + fmt(n) + '</td><td class="num">' + fmt(ad) + '</td><td class="num">' + fmt(tc) + '</td><td class="num ' + (profit >= 0 ? 'profit' : 'loss') + '">' + sign(profit) + fmt(profit) + '</td><td class="num">' + fmtPct(prr) + '</td></tr>';
     });
     document.getElementById('returnSensBody').innerHTML = rrH;
 
@@ -958,6 +967,9 @@ document.querySelectorAll('input').forEach(function (el) {
     el.addEventListener('input', updateUI);
     if (el.type === 'checkbox') el.addEventListener('change', updateUI);
 });
+var savedUnit = localStorage.getItem('xianyu_unit');
+if (savedUnit) document.getElementById('unit').value = savedUnit;
+document.getElementById('unit').addEventListener('input', function() { localStorage.setItem('xianyu_unit', this.value); });
 updateUI();
 </script>
 </body>
