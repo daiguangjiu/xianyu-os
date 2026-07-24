@@ -366,7 +366,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Parameters -->
-    <div class="card">
+    <div class="card" id="paramsSection">
         <h2>基础参数（可调整）</h2>
         <div class="preset-row">
             <label>行业预设：</label>
@@ -1108,8 +1108,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.2';
-var BUILD_TIME = '2026-07-24 12:14';
+var APP_VERSION = 'v3.7.3';
+var BUILD_TIME = '2026-07-24 12:41';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -1978,10 +1978,18 @@ var industryPresets = {
     custom:   { desc: '自定义系数，手动调整' }
 };
 
-function applyPreset() {
+function updatePresetDesc() {
     var preset = document.getElementById('industryPreset').value;
     var desc = document.getElementById('presetDesc');
     if (preset === 'custom') { desc.textContent = '自定义系数，手动调整'; return; }
+    var ps = industryPresets[preset];
+    if (ps && ps.desc) desc.textContent = ps.desc;
+}
+
+function applyPreset() {
+    var preset = document.getElementById('industryPreset').value;
+    var desc = document.getElementById('presetDesc');
+    if (preset === 'custom') { desc.textContent = '自定义系数，手动调整'; updateUI(); return; }
     var ps = industryPresets[preset];
     document.getElementById('funnelCPC').value = ps.cpc;
     document.getElementById('funnelCTR').value = ps.ctr;
@@ -2177,26 +2185,31 @@ function initCloud(callback) {
             if (res.error) {
                 console.error('Supabase getSession error:', res.error);
                 sb = null;
+                setInputsDisabled(false);
                 updateCloudUI();
                 if (callback) callback(res.error.message || '无法获取会话');
                 return;
             }
             if (res.data.session) {
                 sbUser = res.data.session.user;
+                setInputsDisabled(true);
                 afterLogin().then(function () { if (callback) callback(); });
             } else {
+                setInputsDisabled(false);
                 updateCloudUI();
                 if (callback) callback();
             }
         }).catch(function (e) {
             console.error('Supabase connection error:', e);
             sb = null;
+            setInputsDisabled(false);
             updateCloudUI();
             if (callback) callback(e.message || '连接异常');
         });
     } catch (e) {
         console.error('Supabase init error:', e);
         sb = null;
+        setInputsDisabled(false);
         updateCloudUI();
         if (callback) callback(e.message || '初始化失败');
     }
@@ -2261,16 +2274,25 @@ async function doAuth() {
 async function doLogout() {
     await sb.auth.signOut();
     sbUser = null; currentProject = null; projects = [];
+    setInputsDisabled(false);
     updateCloudUI();
     v3Render();
 }
 
+// 控制参数输入区是否可编辑，防止云端项目加载前用户修改被覆盖
+function setInputsDisabled(disabled) {
+    document.querySelectorAll('#paramsSection input, #paramsSection select, #paramsSection button').forEach(function (el) {
+        el.disabled = disabled;
+    });
+}
+
 // ----- 登录后初始化 -----
 async function afterLogin() {
+    setInputsDisabled(true);
     setSync('syncing', '加载项目...');
     // 加载项目列表
     var res = await sb.from('projects').select('*').order('updated_at', { ascending: false });
-    if (res.error) { setSync('error', '加载项目失败: ' + res.error.message); return; }
+    if (res.error) { setSync('error', '加载项目失败: ' + res.error.message); setInputsDisabled(false); return; }
     projects = res.data || [];
     // 检测 projects 表是否有 unit 列（兼容未执行 ALTER TABLE 的旧库）
     unitColumnExists = projects.length > 0 && ('unit' in projects[0]);
@@ -2282,6 +2304,7 @@ async function afterLogin() {
         loadProjectParams(currentProject);
     }
     updateCloudUI();
+    setInputsDisabled(false);
     setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
     v3Render();
 }
@@ -2356,7 +2379,6 @@ function collectParams() {
     };
 }
 function loadProjectParams(p) {
-    if (p.industry) { document.getElementById('industryPreset').value = p.industry; applyPreset(); }
     if (p.unit != null && document.getElementById('unit')) { document.getElementById('unit').value = p.unit; updateUnitLabels(); }
     if (p.quantity != null) document.getElementById('quantity').value = p.quantity;
     if (p.price != null) document.getElementById('price').value = p.price;
@@ -2374,6 +2396,7 @@ function loadProjectParams(p) {
     if (p.funnel_ctr != null) document.getElementById('funnelCTR').value = p.funnel_ctr;
     if (p.funnel_consult != null) document.getElementById('funnelConsult').value = p.funnel_consult;
     if (p.funnel_convert != null) document.getElementById('funnelConvert').value = p.funnel_convert;
+    if (p.industry) { document.getElementById('industryPreset').value = p.industry; updatePresetDesc(); }
     updateUI();
 }
 
@@ -2394,11 +2417,19 @@ function scheduleSaveProject() {
             funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
         };
         if (unitColumnExists) updateData.unit = params.unit;
+        setSync('syncing', '保存参数...');
         var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
-        if (!res.error) {
+        if (res.error) {
+            console.error('保存项目参数失败:', res.error);
+            setSync('error', '保存失败: ' + res.error.message);
+        } else {
+            // 更新内存中的项目快照，避免刷新时读到旧值
+            Object.keys(updateData).forEach(function (k) {
+                if (currentProject && k in currentProject) currentProject[k] = updateData[k];
+            });
             setSync('synced', '参数已同步 ' + new Date().toLocaleTimeString('zh-CN'));
         }
-    }, 2000);
+    }, 800);
 }
 
 // ----- 同步状态 -----
@@ -2425,7 +2456,15 @@ async function syncNow() {
             funnel_consult: params.funnelConsult, funnel_convert: params.funnelConvert
         };
         if (unitColumnExists) updateData.unit = params.unit;
-        await sb.from('projects').update(updateData).eq('id', currentProject.id);
+        var res = await sb.from('projects').update(updateData).eq('id', currentProject.id);
+        if (res.error) {
+            console.error('syncNow 保存失败:', res.error);
+            setSync('error', '同步失败: ' + res.error.message);
+        } else {
+            Object.keys(updateData).forEach(function (k) {
+                if (currentProject && k in currentProject) currentProject[k] = updateData[k];
+            });
+        }
     }
     await v3Render();
     setSync('synced', '已同步 ' + new Date().toLocaleTimeString('zh-CN'));
@@ -2655,6 +2694,9 @@ async function importLocalData() {
 }
 
 // ========== Init ==========
+// 先禁用参数区，等待云端项目加载完成后再启用，防止用户修改被覆盖
+setInputsDisabled(true);
+
 document.querySelectorAll('input').forEach(function (el) {
     el.addEventListener('input', function() { updateUI(); scheduleSaveProject(); });
     if (el.type === 'checkbox') el.addEventListener('change', function() { updateUI(); scheduleSaveProject(); });
@@ -2680,8 +2722,8 @@ initCloud(function (err) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.2';
-var BUILD_TIME = '2026-07-24 12:14';
+var APP_VERSION = 'v3.7.3';
+var BUILD_TIME = '2026-07-24 12:41';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
