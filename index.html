@@ -388,6 +388,9 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     <a class="nav-item" onclick="showView('agency')">
         <span class="nav-icon">&#8594;</span>广告代理
     </a>
+    <a class="nav-item" href="legacy.html" style="color:#8c8c8c;font-size:12px;">
+        <span class="nav-icon">&#8617;</span>返回旧版（一页）
+    </a>
 </nav>
 
 <div id="view-main" class="container">
@@ -1290,8 +1293,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.8.0';
-var BUILD_TIME = '2026-07-24 16:00';
+var APP_VERSION = 'v3.8.1';
+var BUILD_TIME = '2026-07-24 16:25';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -2997,8 +3000,8 @@ window.addEventListener('beforeunload', function (e) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.8.0';
-var BUILD_TIME = '2026-07-24 16:00';
+var APP_VERSION = 'v3.8.1';
+var BUILD_TIME = '2026-07-24 16:25';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
 var navVerEl = document.getElementById('navVersion');
