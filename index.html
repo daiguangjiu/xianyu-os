@@ -2613,6 +2613,8 @@ initCloud(function (err) {
 <script>
 var APP_VERSION = 'v3.6.0';
 var BUILD_TIME = '2026-07-23 18:28';
+document.getElementById('appVersion').textContent = APP_VERSION;
+document.getElementById('buildTime').textContent = BUILD_TIME;
 function checkUpdate() {
     var el = document.getElementById('versionStatus');
     if (el) { el.textContent = '检查中...'; el.style.color = '#1677ff'; }
