@@ -183,13 +183,62 @@
             .v3-form { grid-template-columns: repeat(3, 1fr); }
             .funnel-compare { grid-template-columns: 1fr; }
             body { padding: 12px; }
+            .side-nav { display: none !important; }
+            #view-main { margin-left: 0 !important; }
+            .version-bar { margin-left: 0 !important; margin-right: 0 !important; }
+            .footer-bar { margin-left: 0 !important; margin-right: 0 !important; }
             .plan-table { font-size: 12px; }
             .plan-table th, .plan-table td { padding: 6px 8px; }
         }
         @media print {
             body { background: #fff; padding: 0; }
+            .side-nav { display: none !important; }
+            #view-main { margin-left: 0 !important; }
+            #view-main > [data-nav] { display: block !important; }
+            .version-bar { margin-left: 0 !important; }
+            .footer-bar { margin-left: 0 !important; }
             .card { box-shadow: none; border: 1px solid #d9d9d9; page-break-inside: avoid; }
         }
+
+        /* ===== 侧边导航栏 ===== */
+        .side-nav {
+            position: fixed;
+            left: 24px;
+            top: 24px;
+            width: 200px;
+            height: calc(100vh - 48px);
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 16px 0;
+            z-index: 100;
+        }
+        .nav-brand { padding: 4px 20px 16px; border-bottom: 1px solid #f0f0f0; margin-bottom: 8px; }
+        .nav-brand .nav-title { font-weight: 700; font-size: 14px; color: #1f1f1f; }
+        .nav-brand .nav-ver { font-size: 11px; color: #8c8c8c; }
+        .nav-section-label { font-size: 10px; color: #bfbfbf; padding: 12px 20px 4px; letter-spacing: 1px; text-transform: uppercase; }
+        .nav-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #595959;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+            text-decoration: none;
+            user-select: none;
+        }
+        .nav-item:hover { background: #f5f5f5; color: #1890ff; }
+        .nav-item.active {
+            background: #e6f7ff;
+            color: #1890ff;
+            border-left-color: #1890ff;
+            font-weight: 600;
+        }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-divider { height: 1px; background: #f0f0f0; margin: 8px 0; }
+        #view-main { margin-left: 244px; }
 
         /* ===== V3 云端版 UI ===== */
         .cloud-bar { background: #fff; border-radius: 10px; padding: 14px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -308,6 +357,39 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </style>
 </head>
 <body>
+<!-- 侧边导航栏 -->
+<nav class="side-nav" id="mainSideNav">
+    <div class="nav-brand">
+        <div class="nav-title">闲鱼决策系统</div>
+        <div class="nav-ver" id="navVersion">V3</div>
+    </div>
+    <a class="nav-item active" data-target="overview" onclick="switchNav('overview')">
+        <span class="nav-icon">&#9632;</span>概览
+    </a>
+    <a class="nav-item" data-target="params" onclick="switchNav('params')">
+        <span class="nav-icon">&#9881;</span>基础参数
+    </a>
+    <a class="nav-item" data-target="breakeven" onclick="switchNav('breakeven')">
+        <span class="nav-icon">&#9650;</span>盈亏分析
+    </a>
+    <a class="nav-item" data-target="funnel" onclick="switchNav('funnel')">
+        <span class="nav-icon">&#9660;</span>流量漏斗
+    </a>
+    <a class="nav-item" data-target="sensitivity" onclick="switchNav('sensitivity')">
+        <span class="nav-icon">&#9776;</span>敏感性分析
+    </a>
+    <a class="nav-item" data-target="strategy" onclick="switchNav('strategy')">
+        <span class="nav-icon">&#9733;</span>投放策略
+    </a>
+    <a class="nav-item" data-target="dashboard" onclick="switchNav('dashboard')">
+        <span class="nav-icon">&#9679;</span>数据驾驶舱
+    </a>
+    <div class="nav-divider"></div>
+    <a class="nav-item" onclick="showView('agency')">
+        <span class="nav-icon">&#8594;</span>广告代理
+    </a>
+</nav>
+
 <div id="view-main" class="container">
 
     <!-- Header -->
@@ -391,7 +473,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Parameters -->
-    <div class="card" id="paramsSection">
+    <div class="card" id="paramsSection" data-nav="params">
         <h2>基础参数（可调整）</h2>
         <div class="preset-row">
             <label>行业预设：</label>
@@ -442,7 +524,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Sales Detail -->
-    <div class="card">
+    <div class="card" data-nav="overview">
         <h2>销售测算</h2>
         <table>
             <thead><tr><th>项目</th><th>数量</th><th>单价</th><th>金额</th></tr></thead>
@@ -451,7 +533,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Cost Detail -->
-    <div class="card">
+    <div class="card" data-nav="overview">
         <h2>成本明细与盈亏</h2>
         <table>
             <thead><tr><th>成本项目</th><th>计算说明</th><th>金额</th><th>占净GSV</th></tr></thead>
@@ -470,7 +552,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Key Metrics -->
-    <div class="card">
+    <div class="card" data-nav="overview">
         <h2>关键指标</h2>
         <div class="metrics-grid">
             <div class="metric"><div class="label">ROAS（广告回报率）</div><div class="value highlight" id="m-roas">—</div><div class="sub">毛GSV ÷ 广告费</div></div>
@@ -483,7 +565,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- ROAS Break-Even -->
-    <div class="card">
+    <div class="card" data-nav="breakeven">
         <h2>盈亏平衡分析（不同 ROAS 下的利润表现）</h2>
         <table>
             <thead><tr><th>ROAS</th><th>销售收入</th><th>销售净收入</th><th>广告花费</th><th>总成本</th><th>净利润</th><th>利润率</th><th>状态</th></tr></thead>
@@ -493,7 +575,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Budget Allocation -->
-    <div class="card">
+    <div class="card" data-nav="breakeven">
         <h2>广告预算分阶段分配方案</h2>
         <table>
             <thead><tr><th>阶段</th><th>预算占比</th><th>预算金额</th><th>预计天数</th><th>日均预算</th><th>核心目标</th></tr></thead>
@@ -502,7 +584,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- 流量漏斗 V2 核心模块 -->
-    <div class="card">
+    <div class="card" data-nav="funnel">
         <h2 style="border-left-color:#0F6E56;">流量漏斗（V2 核心模块）</h2>
         <div class="note" style="background:#E1F5EE;border-color:#5DCAA5;color:#085041;margin-bottom:16px;">
             <strong>核心升级：</strong>漏斗直接参与算法——正推模式自动取模型广告预算，推算实际能成交多少单、带来多少收入、最终利润多少；反推模式输入目标单量，反推所需预算并一键应用到主模型。顶部「漏斗预测」摘要卡片随漏斗系数实时联动。
@@ -629,7 +711,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Sensitivity -->
-    <div class="card">
+    <div class="card" data-nav="sensitivity">
         <h2>敏感性分析</h2>
         <h3>① 不同无忧卖降价金额的盈利模型 <span style="font-weight:normal;color:#8c8c8c;font-size:12px;">不参与=平台佣金 · 降价=无忧卖佣金</span></h3>
         <table><thead><tr><th>降价金额/<span class="unit-text">双</span></th><th>实际售价</th><th>净GSV</th><th>佣金</th><th>广告预算</th><th>总成本</th><th>净利润</th><th>利润率</th><th>vs不参与</th></tr></thead><tbody id="priceSensBody"></tbody></table>
@@ -641,7 +723,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- Notes -->
-    <div class="card">
+    <div class="card" data-nav="overview">
         <h2>测算说明与建议</h2>
         <ul>
             <li id="ratioExplain"><strong>GSV成本 1:2</strong>：广告投入与 GSV 比值 1:2（ROAS=2），广告预算 = 毛GSV ÷ 2。</li>
@@ -656,7 +738,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- 闲鱼超级擦亮投放策略 -->
-    <div class="card">
+    <div class="card" data-nav="strategy">
         <h2>闲鱼「超级擦亮」投放计划策略</h2>
         <div class="note" style="margin-bottom:16px;">
             <strong>投放工具：</strong>闲鱼后台「超级擦亮」——出价方式为<strong>控成本投放</strong>。优化目标可选：曝光量 / 浏览量 / 关注收藏量 / 咨询量 / 下单量。计划类型：套餐擦亮 / 自定义擦亮。<strong>定向仅支持选择投放时段</strong>，不支持兴趣/行为定向，因此核心通过「优化目标 + 出价 + 投放时段 + 素材差异化」来区分计划。预算金额随上方参数自动联动。
@@ -948,7 +1030,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
     </div>
 
     <!-- V3 每日经营数据录入 -->
-    <div class="card">
+    <div class="card" data-nav="dashboard">
         <h2 style="border-left-color:#BA7517;">每日经营数据录入（V3）</h2>
         <div class="note" style="background:#FAEEDA;border-color:#FAC775;color:#633806;margin-bottom:16px;">
             <strong>用途：</strong>每天录入真实投放数据，系统自动计算实际漏斗系数（CPC / CTR / 咨询率 / 成交率）。积累 7 天以上数据后，可一键「应用到漏斗」校准 V2 系数，让模型越来越准。<span id="storageNote">数据存在浏览器本地，不会丢失。</span>
@@ -1208,8 +1290,8 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 <script>
 // ===== 版本管理 =====
-var APP_VERSION = 'v3.7.9';
-var BUILD_TIME = '2026-07-24 15:48';
+var APP_VERSION = 'v3.8.0';
+var BUILD_TIME = '2026-07-24 16:00';
 
 function checkUpdate() {
     fetch('version.json?t=' + Date.now())
@@ -1688,8 +1770,10 @@ function goAgencyProfit() {
 function showView(v) {
     var main = document.getElementById('view-main');
     var agency = document.getElementById('view-agency');
+    var nav = document.getElementById('mainSideNav');
     if (v === 'agency') {
         if (main) main.style.display = 'none';
+        if (nav) nav.style.display = 'none';
         if (agency) {
             agency.style.display = 'block';
             // 把当前 V3 的预算传递给代理页面（通过全局变量 + 注入到代理的 projects 列表）
@@ -1722,8 +1806,35 @@ function showView(v) {
     } else {
         if (main) main.style.display = 'block';
         if (agency) agency.style.display = 'none';
+        if (nav) nav.style.display = 'block';
     }
     try { localStorage.setItem(AGENCY_VIEW_KEY, v); } catch(e) {}
+}
+
+// ========== 侧边导航切换 ==========
+var currentNav = 'overview';
+function switchNav(target) {
+    currentNav = target;
+    updateUI(); // 先刷新数据（updateUI 会处理 wmCompareCard 的 display）
+    // 隐藏所有带 data-nav 的 card，只显示匹配的
+    document.querySelectorAll('#view-main > [data-nav]').forEach(function(el) {
+        el.style.display = el.getAttribute('data-nav') === target ? '' : 'none';
+    });
+    // wmCompareCard 不带 data-nav，单独处理：只在 overview + 无忧卖开启时显示
+    var wmCard = document.getElementById('wmCompareCard');
+    if (wmCard) {
+        if (target === 'overview') {
+            var wmEnabled = document.getElementById('wuyoumai').checked;
+            wmCard.style.display = wmEnabled ? 'block' : 'none';
+        } else {
+            wmCard.style.display = 'none';
+        }
+    }
+    // 导航高亮
+    document.querySelectorAll('#mainSideNav .nav-item').forEach(function(item) {
+        item.classList.toggle('active', item.getAttribute('data-target') === target);
+    });
+    window.scrollTo(0, 0);
 }
 
 // 检测 URL 参数 ?view=agency 自动切换
@@ -2859,6 +2970,7 @@ if (savedUnit) document.getElementById('unit').value = savedUnit;
 document.getElementById('v3Date').value = new Date().toISOString().slice(0, 10);
 updateUI();
 v3Render();
+switchNav('overview');
 initCloud(function (err) {
     if (err) console.warn('Cloud init:', err);
 });
@@ -2873,7 +2985,7 @@ window.addEventListener('beforeunload', function (e) {
 </script>
 
 <!-- 版本管理 -->
-<div style="max-width:1100px;margin:16px auto 0;padding:12px 20px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:#8c8c8c;">
+<div class="footer-bar" style="max-width:960px;margin:16px 24px 0 244px;padding:12px 20px;background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:#8c8c8c;">
     <span>闲鱼商业决策系统</span>
     <span style="color:#595959;font-weight:500;">版本 <span id="appVersion">v3.3.0</span></span>
     <span>构建于 <span id="buildTime">2026-07-22 17:00</span></span>
@@ -2881,10 +2993,12 @@ window.addEventListener('beforeunload', function (e) {
     <span id="versionStatus"></span>
 </div>
 <script>
-var APP_VERSION = 'v3.7.9';
-var BUILD_TIME = '2026-07-24 15:48';
+var APP_VERSION = 'v3.8.0';
+var BUILD_TIME = '2026-07-24 16:00';
 document.getElementById('appVersion').textContent = APP_VERSION;
 document.getElementById('buildTime').textContent = BUILD_TIME;
+var navVerEl = document.getElementById('navVersion');
+if (navVerEl) navVerEl.textContent = APP_VERSION;
 function checkUpdate() {
     var el = document.getElementById('versionStatus');
     if (el) { el.textContent = '检查中...'; el.style.color = '#1677ff'; }
